@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hạ tầng truy xuất thông tin cho AI</title>
+  <meta name="description" content="Ghi chú nghiên cứu về vector, vector database, thuật toán tìm kiếm ANN, bộ nhớ của AI, chunking và hybrid search, kèm sơ đồ và demo tương tác.">
+  <link rel="icon" href="data:,">
+  <script>document.documentElement.className += ' js';</script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/demos.js" defer></script>
+  <script src="js/sim.js" defer></script>
+  <script src="js/quiz-data.js" defer></script>
+  <script src="js/quiz.js" defer></script>
+  <script src="js/main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Bỏ qua mục lục, tới nội dung</a>
+  <div class="progress" aria-hidden="true"><span></span></div>
+
+  <div class="site">
+    <aside class="sidebar">
+      <div class="brand-row">
+        <a class="brand" href="#top">
+          <span class="brand-name">Hạ tầng truy xuất cho AI</span>
+          <span class="brand-sub">Ghi chú nghiên cứu</span>
+        </a>
+        <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Mục lục</button>
+      </div>
+      <nav class="site-nav" id="site-nav" aria-label="Mục lục">
+        <ul>
+          <li><a href="#top">Tổng quan</a></li>
+          <li class="nav-chapter">
+            <a href="#vector"><span class="nav-no">1</span>Vector &amp; Vector Database</a>
+            <ul class="nav-sub">
+              <li><a href="#vector-la-gi">Vector là gì? Vector được sử dụng như thế nào trong AI/ML?</a></li>
+              <li><a href="#embedding">Embedding là gì? Quá trình chuyển đổi dữ liệu thành vector diễn ra như thế nào?</a></li>
+              <li><a href="#vector-database">Vector Database là gì? Khác biệt với Database truyền thống?</a></li>
+              <li><a href="#do-tuong-dong">Các phép đo độ tương đồng giữa vector (Cosine Similarity, Dot Product, Euclidean Distance).</a></li>
+            </ul>
+          </li>
+          <li class="nav-chapter">
+            <a href="#algorithms"><span class="nav-no">2</span>Vector Database Search Algorithms</a>
+            <ul class="nav-sub">
+              <li><a href="#nhom-phuong-phap">Các phương pháp tìm kiếm vector phổ biến.</a></li>
+              <li><a href="#exact-vs-ann">Exact Search và Approximate Nearest Neighbor (ANN).</a></li>
+              <li><a href="#hnsw">Nguyên lý hoạt động cơ bản của HNSW, IVF và PQ.</a></li>
+              <li><a href="#so-sanh-ann">Ưu nhược điểm và trường hợp sử dụng của từng phương pháp.</a></li>
+            </ul>
+          </li>
+          <li class="nav-chapter">
+            <a href="#memory"><span class="nav-no">3</span>AI Memory Management</a>
+            <ul class="nav-sub">
+              <li><a href="#memory-la-gi">AI Memory là gì? Cách AI quản lý và sử dụng thông tin.</a></li>
+              <li><a href="#short-long">Short-term Memory và Long-term Memory.</a></li>
+              <li><a href="#ba-khai-niem">Context Window, Conversation History và Memory khác nhau như thế nào?</a></li>
+              <li><a href="#luu-truy-xuat-cap-nhat">Các phương pháp lưu trữ, truy xuất và cập nhật Memory.</a></li>
+            </ul>
+          </li>
+          <li class="nav-chapter">
+            <a href="#chunking"><span class="nav-no">4</span>Chunking Strategies</a>
+            <ul class="nav-sub">
+              <li><a href="#chunking-la-gi">Chunking là gì? Tại sao cần Chunking?</a></li>
+              <li><a href="#ck-methods">Các phương pháp Chunking phổ biến.</a></li>
+              <li><a href="#size-overlap">Chunk Size và Chunk Overlap.</a></li>
+              <li><a href="#ck-anh-huong">Ảnh hưởng của chiến lược Chunking đến chất lượng Retrieval.</a></li>
+            </ul>
+          </li>
+          <li class="nav-chapter">
+            <a href="#synthesis"><span class="nav-no">5</span>Information Analysis &amp; Synthesis</a>
+            <ul class="nav-sub">
+              <li><a href="#trich-xuat">Các phương pháp phân tích và trích xuất thông tin từ dữ liệu.</a></li>
+              <li><a href="#to-chuc">Cách tổ chức, phân loại và tổng hợp thông tin từ nhiều nguồn.</a></li>
+              <li><a href="#kw-sem">Keyword Search và Semantic Search.</a></li>
+              <li><a href="#hybrid-rerank">Hybrid Search và Reranking.</a></li>
+              <li><a href="#xu-ly-van-de">Các vấn đề khi xử lý thông tin trùng lặp, mâu thuẫn hoặc thiếu ngữ cảnh.</a></li>
+            </ul>
+          </li>
+          <li><a href="#references">Tài liệu tham khảo</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main id="main">
+      <div class="content">
+
+        <header class="hero" id="top">
+          <h1>Từ tài liệu đến câu trả lời: hạ tầng truy xuất thông tin cho AI</h1>
+          <p class="lead">
+            Trang này giải thích cách một hệ thống AI tìm đúng thông tin trong lượng dữ liệu lớn:
+            biến dữ liệu thành vector, tìm kiếm nhanh bằng chỉ mục ANN, nhớ lại bối cảnh hội thoại
+            và tổng hợp kết quả thành câu trả lời. Mỗi phần có sơ đồ hoặc demo để bạn tự thử.
+            Bấm vào một bước trong sơ đồ dưới đây để nhảy tới phần tương ứng.
+          </p>
+
+          <figure class="pipeline" aria-labelledby="pipeline-caption">
+            <div class="lane lane-index">
+              <p class="lane-label">Lập chỉ mục <span>chạy khi thêm hoặc cập nhật tài liệu</span></p>
+              <ol class="steps">
+                <li>
+                  <a class="node" href="#chunking" aria-label="Bước 1, Tài liệu. Xem Phần 4, Chiến lược Chunking">
+                    <span class="step-no" aria-hidden="true">1</span>
+                    <strong class="node-title">Tài liệu</strong>
+                    <span class="node-desc">PDF, trang web, ghi chú: dữ liệu thô cần đưa vào hệ thống.</span>
+                    <span class="node-go">Xem Phần 4</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="node" href="#chunking" aria-label="Bước 2, Chunking. Xem Phần 4, Chiến lược Chunking">
+                    <span class="step-no" aria-hidden="true">2</span>
+                    <strong class="node-title">Chunking</strong>
+                    <span class="node-desc">Cắt tài liệu thành các đoạn đủ ngữ cảnh để tìm kiếm.</span>
+                    <span class="node-go">Xem Phần 4</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="node" href="#vector" aria-label="Bước 3, Embedding. Xem Phần 1, Vector và Vector Database">
+                    <span class="step-no" aria-hidden="true">3</span>
+                    <strong class="node-title">Embedding</strong>
+                    <span class="node-desc">Mỗi đoạn được chuyển thành một vector số thực.</span>
+                    <span class="node-go">Xem Phần 1</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="node" href="#algorithms" aria-label="Bước 4, Vector DB. Xem Phần 2, Thuật toán tìm kiếm vector">
+                    <span class="step-no" aria-hidden="true">4</span>
+                    <strong class="node-title">Vector DB</strong>
+                    <span class="node-desc">Lưu vector và dựng chỉ mục ANN như HNSW, IVF, PQ.</span>
+                    <span class="node-go">Xem Phần 2</span>
+                  </a>
+                </li>
+              </ol>
+            </div>
+
+            <p class="lane-bridge" aria-hidden="true">Vector DB được đọc mỗi khi có câu hỏi mới</p>
+
+            <div class="lane lane-query">
+              <p class="lane-label">Truy vấn <span>chạy mỗi lần người dùng hỏi</span></p>
+              <ol class="steps">
+                <li>
+                  <a class="node" href="#synthesis" aria-label="Bước 5, Truy xuất. Xem Phần 5, Phân tích và tổng hợp thông tin">
+                    <span class="step-no" aria-hidden="true">5</span>
+                    <strong class="node-title">Truy xuất</strong>
+                    <span class="node-desc">Tìm đoạn liên quan bằng keyword và vector, rồi rerank.</span>
+                    <span class="node-go">Xem Phần 5</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="node" href="#memory" aria-label="Bước 6, LLM có memory. Xem Phần 3, Quản lý bộ nhớ của AI">
+                    <span class="step-no" aria-hidden="true">6</span>
+                    <strong class="node-title">LLM có memory</strong>
+                    <span class="node-desc">Mô hình đọc các đoạn tìm được cùng bộ nhớ của hội thoại.</span>
+                    <span class="node-go">Xem Phần 3</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="node" href="#synthesis" aria-label="Bước 7, Câu trả lời. Xem Phần 5, Phân tích và tổng hợp thông tin">
+                    <span class="step-no" aria-hidden="true">7</span>
+                    <strong class="node-title">Câu trả lời</strong>
+                    <span class="node-desc">Kết quả được tổng hợp từ nhiều nguồn, có thể dẫn nguồn.</span>
+                    <span class="node-go">Xem Phần 5</span>
+                  </a>
+                </li>
+              </ol>
+            </div>
+
+            <figcaption id="pipeline-caption">
+              Số trên sơ đồ là thứ tự dữ liệu đi qua hệ thống. Các phần bên dưới đánh số theo đề bài nghiên cứu,
+              nên thứ tự khác với sơ đồ.
+            </figcaption>
+          </figure>
+        </header>
+
+        <section class="section" id="vector" aria-labelledby="vector-title">
+          <h2 id="vector-title">1. Vector &amp; Vector Database</h2>
+          <p class="section-lead">Dữ liệu được biểu diễn thành vector, và vector database lưu trữ, so khớp chúng theo độ gần về nghĩa.</p>
+          <div class="prose">
+
+            <h3 id="vector-la-gi">Vector là gì và dùng để làm gì?</h3>
+            <p>
+              Hãy thử mô tả một món ăn cho máy tính. Thay vì viết “cay vừa, hơi ngọt, khá mặn”, bạn chấm điểm từng đặc điểm
+              theo thang 0 đến 5 (điểm do bạn tự đặt): cay 3, ngọt 2, mặn 4. Ba con số đó, xếp theo một thứ tự cố định,
+              tạo thành một <strong>vector</strong>: (3, 2, 4). Bạn có thể coi nó là một điểm trong không gian ba chiều,
+              hoặc một mũi tên đi từ gốc tọa độ tới điểm đó.
+            </p>
+            <p>
+              Nói gọn, vector là một danh sách có thứ tự gồm <em>n</em> số. Mỗi số là giá trị trên một
+              <strong>chiều</strong> (dimension), nên danh sách <em>n</em> số là vector <em>n</em> chiều. Máy tính không hiểu
+              “cay” hay “ngọt”, nhưng so sánh các con số thì rất nhanh: hai món có vector gần nhau nghĩa là chúng giống nhau
+              ở những đặc điểm ta đã chọn.
+            </p>
+            <p>Trong AI/ML, vector xuất hiện ở nhiều chỗ:</p>
+            <ul>
+              <li><strong>Đặc trưng đầu vào (features).</strong> Một căn nhà có thể là vector (diện tích, số phòng ngủ, khoảng cách tới trung tâm) = (60, 2, 5) để đưa vào mô hình dự đoán giá. Vì các số có thang đo rất khác nhau, người ta thường chuẩn hóa chúng trước khi so sánh.</li>
+              <li><strong>Biểu diễn nghĩa (embedding).</strong> Câu, đoạn văn hay hình ảnh được mô hình chuyển thành vector sao cho nội dung gần nghĩa thì vector gần nhau. Đây là nền tảng của tìm kiếm ngữ nghĩa và RAG, giải thích ngay bên dưới.</li>
+              <li><strong>Gợi ý (recommendation).</strong> Người dùng và sản phẩm đều có vector; sản phẩm có vector gần vector của người dùng được ưu tiên gợi ý.</li>
+              <li><strong>Phân cụm và phát hiện bất thường.</strong> Các điểm dữ liệu gần nhau tạo thành cụm; điểm nằm xa mọi cụm có thể là bất thường.</li>
+              <li><strong>Bên trong mạng nơ-ron.</strong> Dữ liệu đi qua mô hình dưới dạng các vector (hoặc ma trận, tức một tập các vector) ở từng lớp.</li>
+            </ul>
+
+            <h3 id="embedding">Embedding: biến dữ liệu thành vector có nghĩa</h3>
+            <p>
+              Các vector đặc trưng ở trên do con người chọn (cay, ngọt, mặn). Với văn bản hay hình ảnh, ta không thể liệt kê
+              hết các đặc điểm bằng tay. <strong>Embedding</strong> giải quyết việc đó: một mô hình học máy tự học cách biểu diễn
+              dữ liệu thành vector số thực có số chiều cố định, sao cho dữ liệu có nghĩa gần nhau thì vector nằm gần nhau.
+              Số chiều do mô hình quy định, thường từ vài trăm đến vài nghìn.
+            </p>
+            <p>
+              Hình dưới là bức tranh thu nhỏ. Không gian thật có hàng trăm chiều nên không vẽ được; ta chiếu xuống hai chiều
+              cho dễ nhìn. Các từ cùng chủ đề tụ lại thành cụm, và một câu hỏi sẽ nằm gần những mục có nghĩa liên quan.
+            </p>
+
+            <figure class="figure">
+              <svg viewBox="0 0 420 280" role="img" aria-labelledby="fig-space-title fig-space-desc">
+                <title id="fig-space-title">Không gian embedding thu nhỏ về hai chiều</title>
+                <desc id="fig-space-desc">Ba cụm điểm: động vật, trái cây và phương tiện. Câu hỏi “con mèo con” nằm gần ba điểm thuộc cụm động vật là mèo, chó và thú cưng.</desc>
+
+                <circle class="query-ring" cx="95" cy="100" r="56"/>
+
+                <text class="fig-group" x="20" y="28">Động vật</text>
+                <circle class="pt pt-teal" cx="70" cy="70" r="6"/>
+                <text class="fig-label" x="80" y="66">mèo</text>
+                <circle class="pt pt-teal" cx="140" cy="100" r="6"/>
+                <text class="fig-label" x="150" y="96">chó</text>
+                <circle class="pt pt-teal" cx="60" cy="125" r="6"/>
+                <text class="fig-label" x="70" y="140">thú cưng</text>
+                <polygon class="pt-magenta" points="95,91 104,100 95,109 86,100"/>
+                <text class="fig-query" x="20" y="178">Câu hỏi: “con mèo con”</text>
+
+                <text class="fig-group" x="250" y="28">Trái cây</text>
+                <circle class="pt pt-amber" cx="270" cy="70" r="6"/>
+                <text class="fig-label" x="280" y="66">táo</text>
+                <circle class="pt pt-amber" cx="335" cy="92" r="6"/>
+                <text class="fig-label" x="345" y="88">cam</text>
+                <circle class="pt pt-amber" cx="285" cy="120" r="6"/>
+                <text class="fig-label" x="295" y="136">chuối</text>
+
+                <text class="fig-group" x="250" y="184">Phương tiện</text>
+                <circle class="pt pt-magenta" cx="270" cy="214" r="6"/>
+                <text class="fig-label" x="280" y="210">xe hơi</text>
+                <circle class="pt pt-magenta" cx="345" cy="238" r="6"/>
+                <text class="fig-label" x="355" y="234">xe máy</text>
+                <circle class="pt pt-magenta" cx="262" cy="256" r="6"/>
+                <text class="fig-label" x="272" y="272">xe tải</text>
+              </svg>
+              <figcaption>
+                Hình minh họa: vị trí các điểm do mình tự đặt, không phải kết quả của một mô hình cụ thể, và hai trục không có
+                ý nghĩa riêng. Vòng nét đứt khoanh ba điểm gần câu hỏi nhất.
+              </figcaption>
+            </figure>
+
+            <p>Quá trình chuyển đổi dữ liệu thành vector gồm bốn bước:</p>
+
+            <figure class="pipeline lane-index">
+              <ol class="steps">
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">1</span>
+                    <strong class="node-title">Dữ liệu thô</strong>
+                    <span class="node-desc">Văn bản, hình ảnh, âm thanh. Với văn bản: làm sạch cơ bản, bỏ phần thừa, thống nhất định dạng.</span>
+                    <span class="node-example">Con mèo đang ngủ trên ghế.</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">2</span>
+                    <strong class="node-title">Tokenize</strong>
+                    <span class="node-desc">Cắt văn bản thành các token (từ hoặc mảnh từ). Mỗi token ứng với một mã số trong từ điển của mô hình.</span>
+                    <span class="node-example">Con | mèo | đang | ngủ | trên | ghế | .</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">3</span>
+                    <strong class="node-title">Mô hình embedding</strong>
+                    <span class="node-desc">Mạng nơ-ron (thường là Transformer) đọc cả chuỗi token, rồi gộp lại (pooling) thành một vector cho cả câu.</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">4</span>
+                    <strong class="node-title">Vector</strong>
+                    <span class="node-desc">Danh sách <em>n</em> số thực, với <em>n</em> cố định theo mô hình.</span>
+                    <span class="node-example">[0.12, −0.80, 0.33, …]</span>
+                  </div>
+                </li>
+              </ol>
+              <figcaption>
+                Ví dụ minh họa. Cách cắt token và giá trị vector thực tế phụ thuộc vào từng mô hình. Một số mô hình trả về
+                vector đã chuẩn hóa độ dài về 1; nếu không, ta tự chuẩn hóa khi cần.
+              </figcaption>
+            </figure>
+
+            <div class="callout warn">
+              <p class="callout-title">Hai quy tắc khi dùng embedding</p>
+              <ul>
+                <li>Vector của tài liệu và vector của câu hỏi phải do cùng một mô hình tạo ra. Mỗi mô hình có không gian riêng, nên số ở vị trí thứ <em>i</em> của mô hình này không có nghĩa gì với mô hình khác.</li>
+                <li>Số chiều phải khớp. Đổi mô hình embedding thường đồng nghĩa với việc tính lại toàn bộ vector đã lưu.</li>
+              </ul>
+            </div>
+
+            <h3 id="vector-database">Vector database và khác biệt với database truyền thống</h3>
+            <p>
+              Giả sử bạn có một triệu đoạn văn, mỗi đoạn đã có một vector. Khi người dùng đặt câu hỏi, bạn cần tìm vài đoạn có
+              vector gần với vector của câu hỏi nhất. Database truyền thống giống mục lục tra theo tên chính xác; vector
+              database giống việc hỏi thủ thư: “cho tôi những cuốn gần giống cuốn này”.
+            </p>
+            <p>
+              <strong>Vector database</strong> là hệ thống lưu trữ vector (kèm dữ liệu gốc hoặc metadata như nguồn, ngày,
+              tác giả) và được tối ưu cho một việc: tìm <em>k</em> vector gần nhất với một vector truy vấn, gọi là truy vấn
+              k-NN (k nearest neighbors). Để làm việc đó nhanh trên dữ liệu lớn, nó dùng các chỉ mục chuyên dụng, thường là
+              chỉ mục xấp xỉ (ANN), sẽ được giải thích ở Phần 2.
+            </p>
+
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng so sánh database truyền thống và vector database">
+              <table>
+                <caption class="sr-only">So sánh database truyền thống và vector database</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Tiêu chí</th>
+                    <th scope="col">Database truyền thống (SQL)</th>
+                    <th scope="col">Vector database</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Câu hỏi điển hình</th>
+                    <td>Bản ghi nào có đúng giá trị này, hoặc nằm trong khoảng này?</td>
+                    <td>Những mục nào gần nghĩa với mục này nhất?</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Kiểu dữ liệu chính</th>
+                    <td>Số, chuỗi, ngày, xếp theo hàng và cột với lược đồ rõ ràng.</td>
+                    <td>Vector nhiều chiều, kèm metadata để lọc.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Cách so khớp</th>
+                    <td>Khớp chính xác hoặc so sánh (<code>=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>LIKE</code>).</td>
+                    <td>Độ gần giữa các vector (cosine, dot product, Euclidean).</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Kiểu chỉ mục</th>
+                    <td>B-tree, hash.</td>
+                    <td>HNSW, IVF, PQ và các chỉ mục ANN khác.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Kết quả</th>
+                    <td>Tập bản ghi xác định: đúng hoặc không đúng điều kiện.</td>
+                    <td>Danh sách top-k xếp theo độ gần. Thường là kết quả xấp xỉ, có thể bỏ sót một ít mục đúng.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Ví dụ truy vấn</th>
+                    <td><code>SELECT * FROM users WHERE email = 'an@example.com'</code></td>
+                    <td><code>search(vector_cau_hoi, k=5)</code>: lấy 5 đoạn văn gần câu hỏi nhất.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p><strong>Nên dùng vector database</strong> khi cần tìm theo nghĩa (tìm kiếm ngữ nghĩa, RAG), gợi ý nội dung, hoặc tìm ảnh tương tự. <strong>Chưa phải lựa chọn đầu tiên</strong> khi cần khớp chính xác (mã đơn hàng, email) hoặc thống kê, tổng hợp trên các cột; những việc đó database truyền thống làm tốt hơn.</p>
+
+            <div class="callout">
+              <p class="callout-title">Ranh giới không cứng</p>
+              <p>
+                PostgreSQL có extension pgvector để lưu và tìm vector ngay trong database quen thuộc, và nhiều vector database
+                cũng hỗ trợ lọc theo metadata. Với dữ liệu nhỏ, tìm kiếm vét cạn thường đã đủ nhanh nên chưa cần hệ thống riêng.
+                Chọn gì phụ thuộc vào quy mô và hệ thống bạn đang có.
+              </p>
+            </div>
+
+            <h3 id="do-tuong-dong">Ba phép đo độ tương đồng</h3>
+            <p>
+              Để tìm vector “gần nhất”, ta cần một cách đo độ gần. Có ba phép phổ biến, và chúng trả lời hai câu hỏi hơi
+              khác nhau: hai vector có chỉ về cùng một hướng không, và hai điểm đầu mút nằm cách nhau bao xa.
+            </p>
+
+            <h4>Dot Product (tích vô hướng)</h4>
+            <div class="formula">
+              <b>A</b> · <b>B</b> = a<sub>1</sub>b<sub>1</sub> + a<sub>2</sub>b<sub>2</sub> + … + a<sub>n</sub>b<sub>n</sub> = ‖<b>A</b>‖ × ‖<b>B</b>‖ × cos θ
+            </div>
+            <ul>
+              <li><strong>Hình học:</strong> tính cả hướng lẫn độ dài. Lớn khi hai vector cùng hướng và dài.</li>
+              <li><strong>Giá trị:</strong> càng lớn càng giống, không bị chặn trong khoảng [−1, 1].</li>
+              <li><strong>Dùng khi:</strong> độ dài vector có ý nghĩa và mô hình được huấn luyện để dùng tích vô hướng (một số mô hình gợi ý và truy xuất). Tính nhanh nhất vì không cần chia.</li>
+              <li><strong>Lưu ý:</strong> vector dài chiếm ưu thế dù hướng chưa thật khớp.</li>
+            </ul>
+
+            <h4>Cosine Similarity</h4>
+            <div class="formula">
+              cos θ = (<b>A</b> · <b>B</b>) / (‖<b>A</b>‖ × ‖<b>B</b>‖)
+            </div>
+            <ul>
+              <li><strong>Hình học:</strong> chỉ nhìn góc θ giữa hai vector, bỏ qua độ dài.</li>
+              <li><strong>Giá trị:</strong> từ −1 (ngược hướng) qua 0 (vuông góc) đến 1 (cùng hướng). Cosine distance thường được định nghĩa là 1 − cos θ.</li>
+              <li><strong>Dùng khi:</strong> so sánh nghĩa của văn bản; là lựa chọn phổ biến cho text embedding.</li>
+              <li><strong>Lưu ý:</strong> không phân biệt hai vector cùng hướng nhưng khác độ dài.</li>
+            </ul>
+
+            <h4>Euclidean Distance</h4>
+            <div class="formula">
+              d(<b>A</b>, <b>B</b>) = √( (a<sub>1</sub> − b<sub>1</sub>)² + (a<sub>2</sub> − b<sub>2</sub>)² + … + (a<sub>n</sub> − b<sub>n</sub>)² )
+            </div>
+            <ul>
+              <li><strong>Hình học:</strong> độ dài đoạn thẳng nối hai đầu mút, tức khoảng cách thông thường.</li>
+              <li><strong>Giá trị:</strong> từ 0 trở lên, càng nhỏ càng giống. Đây là khoảng cách chứ không phải độ tương đồng.</li>
+              <li><strong>Dùng khi:</strong> độ lớn của giá trị cũng mang thông tin, ví dụ đặc trưng số hoặc một số vector ảnh.</li>
+              <li><strong>Lưu ý:</strong> nhạy với độ dài vector và thang đo của từng chiều.</li>
+            </ul>
+
+            <div class="callout">
+              <p class="callout-title">Khi vector đã chuẩn hóa độ dài về 1</p>
+              <p>
+                Dot product bằng cosine similarity, và ‖<b>A</b> − <b>B</b>‖² = 2 − 2 cos θ. Vì vậy xếp hạng theo Euclidean,
+                cosine hay dot product cho cùng một thứ tự kết quả. Đó là lý do nhiều hệ thống chuẩn hóa vector rồi dùng dot
+                product cho nhanh.
+              </p>
+            </div>
+
+            <h4>Ví dụ số</h4>
+            <p>
+              Lấy <b>A</b> = (3, 4), <b>B</b> = (4, 3) và <b>C</b> = (6, 8). Vector C cùng hướng với A nhưng dài gấp đôi.
+              Hỏi: B hay C “gần” A hơn?
+            </p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng ví dụ số so sánh ba phép đo">
+              <table>
+                <caption class="sr-only">Ba phép đo áp dụng cho A với B và A với C</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Phép đo</th>
+                    <th scope="col">A với B</th>
+                    <th scope="col">A với C</th>
+                    <th scope="col">Gần A hơn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Dot product</th>
+                    <td>3×4 + 4×3 = 24</td>
+                    <td>3×6 + 4×8 = 50</td>
+                    <td>C (lớn hơn là giống hơn)</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Cosine</th>
+                    <td>24 / (5 × 5) = 0.96</td>
+                    <td>50 / (5 × 10) = 1.00</td>
+                    <td>C (cùng hướng)</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Euclidean</th>
+                    <td>√2 ≈ 1.41</td>
+                    <td>√(9 + 16) = 5</td>
+                    <td>B (nhỏ hơn là gần hơn)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              Cùng một cặp vector nhưng kết quả khác nhau: Euclidean chọn B vì khoảng cách ngắn hơn, còn cosine chọn C vì
+              C cùng hướng với A. Dot product cũng chọn C, một phần nhờ C dài hơn. Đó là lý do cần biết mô hình embedding của
+              bạn được huấn luyện với phép đo nào.
+            </p>
+
+            <div class="demo" id="demo-similarity">
+              <h4 class="demo-title" id="demo-similarity-title">Demo: kéo hai vector và xem ba phép đo thay đổi</h4>
+              <div class="demo-body">
+                <div class="demo-plot">
+                  <svg viewBox="0 0 420 420" role="group" aria-labelledby="demo-similarity-title" aria-describedby="demo-similarity-help">
+                    <g class="plot-grid"></g>
+                    <line class="dist-line" x1="0" y1="0" x2="0" y2="0"/>
+                    <path class="angle-arc" d=""/>
+                    <line class="vec-a" x1="210" y1="210" x2="210" y2="210"/>
+                    <line class="vec-b" x1="210" y1="210" x2="210" y2="210"/>
+                    <text class="angle-text" x="0" y="0"></text>
+                    <g class="handle handle-a" tabindex="0" role="button" aria-label="Đầu mút vector A">
+                      <circle r="13"/><text y="5">A</text>
+                    </g>
+                    <g class="handle handle-b" tabindex="0" role="button" aria-label="Đầu mút vector B">
+                      <circle r="13"/><text y="5">B</text>
+                    </g>
+                  </svg>
+                  <p class="demo-help" id="demo-similarity-help">
+                    Kéo chấm A hoặc B. Hoặc chọn một chấm rồi dùng phím mũi tên (giữ Shift để nhảy 0.5). Bạn cũng có thể nhập số
+                    ở các ô bên cạnh. Nét đứt vàng là khoảng cách Euclidean, cung tròn là góc θ.
+                  </p>
+                </div>
+
+                <div class="demo-panel">
+                  <fieldset class="coord-set is-a">
+                    <legend>Vector A</legend>
+                    <label>x <input type="number" name="ax" step="0.1" min="-8" max="8"></label>
+                    <label>y <input type="number" name="ay" step="0.1" min="-8" max="8"></label>
+                  </fieldset>
+                  <fieldset class="coord-set is-b">
+                    <legend>Vector B</legend>
+                    <label>x <input type="number" name="bx" step="0.1" min="-8" max="8"></label>
+                    <label>y <input type="number" name="by" step="0.1" min="-8" max="8"></label>
+                  </fieldset>
+
+                  <div class="btn-row" role="group" aria-label="Ví dụ có sẵn">
+                    <button type="button" class="btn" data-preset="3,4,4,3">Gần giống: A=(3,4), B=(4,3)</button>
+                    <button type="button" class="btn" data-preset="3,4,6,8">Cùng hướng, B dài gấp đôi</button>
+                    <button type="button" class="btn" data-preset="3,4,-4,3">Vuông góc</button>
+                    <button type="button" class="btn" data-preset="3,4,-3,-4">Ngược hướng</button>
+                    <button type="button" class="btn" data-action="normalize">Chuẩn hóa cả hai về độ dài 1</button>
+                  </div>
+
+                  <dl class="results">
+                    <div><dt>Dot product A · B</dt><dd><output data-out="dot"></output></dd></div>
+                    <div><dt>Cosine similarity</dt><dd><output data-out="cos"></output></dd></div>
+                    <div><dt>Góc θ giữa A và B</dt><dd><output data-out="angle"></output></dd></div>
+                    <div><dt>Euclidean distance</dt><dd><output data-out="dist"></output></dd></div>
+                  </dl>
+
+                  <div class="calc">
+                    <p class="calc-title">Cách tính (làm tròn khi hiển thị)</p>
+                    <p data-calc="len"></p>
+                    <p data-calc="dot"></p>
+                    <p data-calc="cos"></p>
+                    <p data-calc="dist"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p>
+              Thử nút “Cùng hướng, B dài gấp đôi”: cosine bằng 1 nhưng Euclidean vẫn lớn. Rồi bấm “Chuẩn hóa cả hai về độ
+              dài 1” và để ý dot product trùng với cosine.
+            </p>
+
+            <div class="callout">
+              <p class="callout-title">Chọn phép đo nào?</p>
+              <p>
+                Dùng phép đo mà nhà cung cấp mô hình embedding khuyến nghị, thường được ghi trong tài liệu của mô hình. Nếu không
+                rõ, cosine similarity trên vector đã chuẩn hóa là lựa chọn mặc định hợp lý cho văn bản. Hãy cấu hình đúng ngay
+                từ đầu, vì nhiều vector database yêu cầu chọn phép đo khi tạo chỉ mục.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="section" id="algorithms" aria-labelledby="algorithms-title">
+          <h2 id="algorithms-title">2. Vector Database Search Algorithms</h2>
+          <p class="section-lead">Cách tìm láng giềng gần nhất vừa nhanh vừa đủ chính xác: Exact Search, ANN, HNSW, IVF và PQ.</p>
+          <div class="prose">
+
+            <h3 id="nhom-phuong-phap">Các phương pháp tìm kiếm vector phổ biến</h3>
+            <ul>
+              <li><strong>Flat (vét cạn):</strong> không có chỉ mục, so với mọi vector.</li>
+              <li><strong>Dựa trên đồ thị:</strong> nối các vector gần nhau thành đồ thị rồi đi dọc đồ thị. Đại diện: HNSW.</li>
+              <li><strong>Dựa trên phân cụm:</strong> chia dữ liệu thành các cụm và chỉ tìm trong vài cụm gần nhất. Đại diện: IVF.</li>
+              <li><strong>Dựa trên nén:</strong> lưu vector dưới dạng mã ngắn để tiết kiệm bộ nhớ. Đại diện: PQ.</li>
+              <li>Ngoài ra còn có LSH (băm sao cho vector gần nhau dễ rơi vào cùng một ô) và các phương pháp dựa trên cây như Annoy. Phần này tập trung vào HNSW, IVF và PQ, ba kỹ thuật bạn sẽ gặp nhiều nhất trong các vector database.</li>
+            </ul>
+            <p>
+              Ba kỹ thuật này giải quyết ba việc khác nhau (đi đường tắt qua đồ thị, thu hẹp phạm vi tìm, nén vector) nên chúng
+              thường được kết hợp, ví dụ IVF-PQ.
+            </p>
+
+            <h3 id="exact-vs-ann">Exact Search và Approximate Nearest Neighbor (ANN)</h3>
+            <p>
+              Hình dung một thư viện có một triệu cuốn sách và bạn muốn tìm 5 cuốn giống cuốn đang cầm trên tay nhất.
+              Cách chắc chắn nhất là mở từng cuốn ra so sánh. Cách nhanh hơn là đi thẳng tới vài kệ có vẻ phù hợp nhất và chỉ
+              so sánh ở đó, chấp nhận rủi ro bỏ sót một cuốn nằm ở kệ bên cạnh.
+            </p>
+            <p>
+              <strong>Exact search</strong> (còn gọi là brute force hay flat search) làm theo cách thứ nhất: tính khoảng cách
+              từ vector truy vấn tới mọi vector đã lưu, sắp xếp rồi lấy <em>k</em> vector gần nhất. Kết quả luôn đúng, nhưng
+              chi phí mỗi truy vấn tăng tuyến tính theo số vector <em>N</em> và số chiều <em>d</em> (cỡ <em>N × d</em> phép
+              tính). Với vài nghìn vector thì ổn; với hàng triệu vector và yêu cầu trả lời thật nhanh thì thường quá chậm.
+            </p>
+            <p>
+              <strong>Approximate Nearest Neighbor (ANN)</strong> làm theo cách thứ hai: dựng trước một chỉ mục (index) để mỗi
+              truy vấn chỉ phải xem một phần nhỏ dữ liệu. Đổi lại, kết quả là “gần đúng”: thỉnh thoảng một láng giềng thật bị bỏ
+              sót và thay bằng một điểm xa hơn một chút. Các cấu trúc chính xác kiểu k-d tree hiệu quả khi số chiều thấp nhưng
+              thường mất lợi thế khi số chiều lên tới hàng trăm, nên với embedding người ta chủ yếu dùng ANN.
+            </p>
+
+            <h4>Đo độ chính xác bằng recall@k</h4>
+            <p>
+              <strong>Recall@k</strong> = (số láng giềng thật có trong <em>k</em> kết quả của ANN) / <em>k</em>. Ví dụ: top 10
+              thật gồm 10 điểm; ANN trả về 10 điểm, trong đó 9 điểm thuộc top 10 thật. Khi đó recall@10 = 9/10 = 0.9.
+              Để đo cho hệ thống của bạn, hãy chạy flat search trên một tập truy vấn mẫu để lấy “đáp án thật”, rồi so với kết
+              quả của chỉ mục ANN.
+            </p>
+
+            <div class="callout">
+              <p class="callout-title">Ba thứ phải đánh đổi với nhau</p>
+              <ul>
+                <li><strong>Recall:</strong> tìm đúng được bao nhiêu láng giềng thật.</li>
+                <li><strong>Tốc độ:</strong> độ trễ của mỗi truy vấn, hoặc số truy vấn xử lý được mỗi giây.</li>
+                <li><strong>Bộ nhớ và thời gian dựng chỉ mục:</strong> chỉ mục chiếm bao nhiêu RAM, dựng mất bao lâu.</li>
+              </ul>
+              <p>
+                Hầu hết chỉ mục ANN có tham số để trượt giữa các mục này (efSearch của HNSW, nprobe của IVF). Không có cấu hình
+                tốt nhất cho mọi dữ liệu, nên hãy đo trên dữ liệu của bạn.
+              </p>
+            </div>
+
+            <h3 id="hnsw">HNSW: đi theo bản đồ nhiều tầng</h3>
+            <p>
+              Khi đi từ thành phố A tới một địa chỉ cụ thể ở thành phố B, bạn đi đường cao tốc trước (ít điểm dừng, mỗi bước
+              nhảy rất xa) để tới đúng vùng, rồi chuyển sang quốc lộ, cuối cùng đi đường nhỏ trong khu phố.
+              <strong>HNSW</strong> (Hierarchical Navigable Small World) làm điều tương tự trên đồ thị các vector.
+            </p>
+            <ul>
+              <li>Mỗi vector là một node, được nối với những node gần nó.</li>
+              <li>Các node được xếp vào nhiều tầng. Tầng 0 chứa mọi node. Khi thêm một node, nó được gán ngẫu nhiên một tầng cao nhất sao cho càng lên cao càng ít node, và nó có mặt ở mọi tầng bên dưới tầng đó.</li>
+              <li>Tầng trên thưa nên mỗi bước đi dài; tầng dưới dày nên bước đi tinh hơn.</li>
+            </ul>
+
+            <figure class="figure">
+              <div class="scroll-x" tabindex="0" role="region" aria-label="Sơ đồ tìm kiếm trong HNSW, có thể cuộn ngang">
+                <svg viewBox="0 0 560 410" role="img" aria-labelledby="fig-hnsw-title fig-hnsw-desc">
+                  <title id="fig-hnsw-title">Tìm kiếm trong HNSW qua ba tầng</title>
+                  <desc id="fig-hnsw-desc">Ba tầng đồ thị xếp chồng. Tầng 2 có hai node, tầng 1 có bốn node, tầng 0 có mười một node. Đường tìm kiếm bắt đầu ở node điểm vào ở tầng 2, nhảy sang node thứ hai cùng tầng, hạ xuống tầng 1 và nhảy sang node kế tiếp, hạ xuống tầng 0 rồi đi thêm một bước tới node gần điểm truy vấn Q nhất.</desc>
+                  <defs>
+                    <marker id="hn-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                      <path class="hn-arrowhead" d="M0 0 L10 5 L0 10 z"/>
+                    </marker>
+                  </defs>
+
+                  <rect class="hn-layer" x="8" y="10" width="544" height="100"/>
+                  <rect class="hn-layer" x="8" y="125" width="544" height="100"/>
+                  <rect class="hn-layer" x="8" y="240" width="544" height="162"/>
+
+                  <!-- cùng một node xuất hiện ở nhiều tầng -->
+                  <line class="hn-link" x1="70" y1="75" x2="70" y2="320"/>
+                  <line class="hn-link" x1="200" y1="180" x2="200" y2="300"/>
+                  <line class="hn-link" x1="370" y1="70" x2="370" y2="305"/>
+                  <line class="hn-link" x1="455" y1="195" x2="455" y2="300"/>
+
+                  <text class="fig-group hn-label" x="18" y="30">Tầng 2: ít node, bước nhảy dài</text>
+                  <text class="fig-group hn-label" x="18" y="145">Tầng 1</text>
+                  <text class="fig-group hn-label" x="18" y="260">Tầng 0: đủ mọi node, liên kết gần</text>
+
+                  <!-- cạnh tầng 2 -->
+                  <line class="hn-edge" x1="70" y1="75" x2="370" y2="70"/>
+                  <!-- cạnh tầng 1 -->
+                  <line class="hn-edge" x1="70" y1="190" x2="200" y2="180"/>
+                  <line class="hn-edge" x1="200" y1="180" x2="370" y2="185"/>
+                  <line class="hn-edge" x1="370" y1="185" x2="455" y2="195"/>
+                  <!-- cạnh tầng 0 -->
+                  <line class="hn-edge" x1="70" y1="320" x2="115" y2="290"/>
+                  <line class="hn-edge" x1="70" y1="320" x2="150" y2="345"/>
+                  <line class="hn-edge" x1="115" y1="290" x2="150" y2="345"/>
+                  <line class="hn-edge" x1="115" y1="290" x2="200" y2="300"/>
+                  <line class="hn-edge" x1="150" y1="345" x2="200" y2="300"/>
+                  <line class="hn-edge" x1="150" y1="345" x2="250" y2="350"/>
+                  <line class="hn-edge" x1="200" y1="300" x2="250" y2="350"/>
+                  <line class="hn-edge" x1="200" y1="300" x2="295" y2="295"/>
+                  <line class="hn-edge" x1="250" y1="350" x2="295" y2="295"/>
+                  <line class="hn-edge" x1="250" y1="350" x2="335" y2="350"/>
+                  <line class="hn-edge" x1="295" y1="295" x2="335" y2="350"/>
+                  <line class="hn-edge" x1="295" y1="295" x2="370" y2="305"/>
+                  <line class="hn-edge" x1="335" y1="350" x2="370" y2="305"/>
+                  <line class="hn-edge" x1="335" y1="350" x2="415" y2="355"/>
+                  <line class="hn-edge" x1="370" y1="305" x2="415" y2="355"/>
+                  <line class="hn-edge" x1="370" y1="305" x2="455" y2="300"/>
+                  <line class="hn-edge" x1="415" y1="355" x2="455" y2="300"/>
+                  <line class="hn-edge" x1="415" y1="355" x2="510" y2="340"/>
+                  <line class="hn-edge" x1="455" y1="300" x2="510" y2="340"/>
+
+                  <!-- đường tìm kiếm -->
+                  <line class="hn-path" x1="70" y1="75" x2="370" y2="70"/>
+                  <line class="hn-drop" x1="370" y1="80" x2="370" y2="174" marker-end="url(#hn-arrow)"/>
+                  <line class="hn-path" x1="370" y1="185" x2="455" y2="195"/>
+                  <line class="hn-drop" x1="455" y1="205" x2="455" y2="289" marker-end="url(#hn-arrow)"/>
+                  <line class="hn-path" x1="455" y1="300" x2="510" y2="340"/>
+
+                  <!-- node tầng 2 -->
+                  <circle class="hn-node on-path" cx="70" cy="75" r="7"/>
+                  <circle class="hn-node on-path" cx="370" cy="70" r="7"/>
+                  <!-- node tầng 1 -->
+                  <circle class="hn-node" cx="70" cy="190" r="7"/>
+                  <circle class="hn-node" cx="200" cy="180" r="7"/>
+                  <circle class="hn-node on-path" cx="370" cy="185" r="7"/>
+                  <circle class="hn-node on-path" cx="455" cy="195" r="7"/>
+                  <!-- node tầng 0 -->
+                  <circle class="hn-node" cx="70" cy="320" r="7"/>
+                  <circle class="hn-node" cx="115" cy="290" r="7"/>
+                  <circle class="hn-node" cx="150" cy="345" r="7"/>
+                  <circle class="hn-node" cx="200" cy="300" r="7"/>
+                  <circle class="hn-node" cx="250" cy="350" r="7"/>
+                  <circle class="hn-node" cx="295" cy="295" r="7"/>
+                  <circle class="hn-node" cx="335" cy="350" r="7"/>
+                  <circle class="hn-node" cx="370" cy="305" r="7"/>
+                  <circle class="hn-node" cx="415" cy="355" r="7"/>
+                  <circle class="hn-node on-path" cx="455" cy="300" r="7"/>
+                  <circle class="hn-node on-path" cx="510" cy="340" r="7"/>
+
+                  <text class="fig-label" x="62" y="58">Điểm vào</text>
+
+                  <polygon class="hn-query" points="530,362 540,372 530,382 520,372"/>
+                  <text class="fig-query" x="530" y="398" text-anchor="middle">Q</text>
+
+                  <g class="hn-badge"><circle cx="220" cy="72" r="10"/><text x="220" y="76">1</text></g>
+                  <g class="hn-badge"><circle cx="412" cy="190" r="10"/><text x="412" y="194">2</text></g>
+                  <g class="hn-badge"><circle cx="482" cy="320" r="10"/><text x="482" y="324">3</text></g>
+                </svg>
+              </div>
+              <figcaption>
+                Sơ đồ minh họa, không theo tỉ lệ. Đường đỏ là đường tìm kiếm của truy vấn Q; nét đứt đỏ là bước hạ xuống tầng
+                dưới tại cùng một node; nét chấm xám nối các bản sao của cùng một node ở các tầng. Số 1, 2, 3 là ba bước di chuyển
+                được mô tả bên dưới. <span class="only-narrow">Vuốt ngang để xem toàn bộ hình.</span>
+              </figcaption>
+            </figure>
+
+            <p>Cách HNSW trả lời một truy vấn Q:</p>
+            <ol>
+              <li>Bắt đầu ở điểm vào (entry point) trên tầng cao nhất. Ở mỗi tầng, xem các node hàng xóm và đi tới hàng xóm gần Q hơn; lặp lại cho tới khi không còn hàng xóm nào gần hơn (bước 1 và 2 trong hình).</li>
+              <li>Khi dừng, hạ xuống tầng dưới tại đúng node đó và làm lại.</li>
+              <li>Ở tầng 0, thay vì chỉ đi tham lam theo một đường, thuật toán giữ một danh sách ứng viên có kích thước <code>efSearch</code> và mở rộng dần các ứng viên gần Q nhất (bước 3). Cuối cùng trả về <em>k</em> node gần nhất trong danh sách.</li>
+            </ol>
+            <p>
+              Khi thêm một vector mới, HNSW dùng chính cách tìm kiếm này để tìm các node gần nhất ở từng tầng rồi nối vector mới
+              với tối đa <code>M</code> node trong số đó. Vì vậy chèn thêm dữ liệu vào chỉ mục đang chạy tương đối dễ.
+            </p>
+
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng tham số của HNSW">
+              <table>
+                <caption class="sr-only">Ba tham số chính của HNSW</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Tham số</th>
+                    <th scope="col">Ý nghĩa</th>
+                    <th scope="col">Khi tăng lên</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row"><code>M</code></th>
+                    <td>Số liên kết tối đa của mỗi node. Tầng 0 thường được phép có nhiều hơn (hay gặp là gấp đôi), tùy thư viện.</td>
+                    <td>Recall cao hơn, nhưng tốn bộ nhớ hơn và dựng chỉ mục lâu hơn.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><code>efConstruction</code></th>
+                    <td>Kích thước danh sách ứng viên khi chèn một node lúc dựng chỉ mục.</td>
+                    <td>Đồ thị chất lượng hơn (recall cao hơn) nhưng dựng chậm hơn. Không làm tăng số liên kết tối đa của mỗi node.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><code>efSearch</code></th>
+                    <td>Kích thước danh sách ứng viên khi truy vấn; phải lớn hơn hoặc bằng <em>k</em>. Một số thư viện đặt tên là <code>ef</code> hoặc <code>ef_search</code>.</td>
+                    <td>Recall cao hơn nhưng mỗi truy vấn chậm hơn. Chỉnh được ngay lúc truy vấn, không cần dựng lại chỉ mục.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              Nhiều thư viện lấy <code>M = 16</code> làm giá trị mặc định. Đây chỉ là điểm xuất phát (gợi ý thực nghiệm, cần thử
+              với dữ liệu của bạn), không phải giá trị tối ưu chung.
+            </p>
+
+            <div id="sim-hnsw"></div>
+
+            <h3 id="ivf">IVF: chỉ lục những ngăn có khả năng nhất</h3>
+            <p>
+              Trong siêu thị, hàng hóa được xếp theo khu: rau củ, đồ khô, đồ uống. Muốn tìm nước cam, bạn không đi hết cửa hàng
+              mà tới khu đồ uống, và có thể ghé thêm khu bên cạnh cho chắc. <strong>IVF</strong> (Inverted File index) làm
+              đúng như vậy với vector, và gồm ba bước:
+            </p>
+            <ol>
+              <li><strong>Huấn luyện:</strong> chạy k-means trên dữ liệu (hoặc một mẫu của nó) để có <code>nlist</code> điểm tâm cụm, gọi là centroid.</li>
+              <li><strong>Lập chỉ mục:</strong> gán mỗi vector vào cụm có centroid gần nhất. Mỗi cụm giữ một danh sách các vector thuộc về nó (inverted list). Tên “inverted file” xuất phát từ chỗ này: từ cụm ta tra ra danh sách các mục, giống chỉ mục đảo trong tìm kiếm văn bản.</li>
+              <li><strong>Truy vấn:</strong> so truy vấn Q với <code>nlist</code> centroid, chọn <code>nprobe</code> cụm gần nhất, chỉ tính khoảng cách tới các vector trong những cụm đó rồi lấy top-<em>k</em>.</li>
+            </ol>
+            <p>
+              Đánh đổi nằm ở <code>nprobe</code>. Nhỏ thì nhanh nhưng dễ bỏ sót, nhất là khi Q nằm gần ranh giới giữa hai cụm:
+              láng giềng thật có thể nằm ở phía bên kia ranh giới. Lớn thì chính xác hơn nhưng phải quét nhiều hơn. Khi
+              <code>nprobe = nlist</code>, IVF quét toàn bộ dữ liệu nên cho kết quả trùng exact search, và còn tốn thêm bước so
+              với centroid. Số cụm <code>nlist</code> thường được chọn theo cỡ căn bậc hai của số vector (gợi ý thực nghiệm, cần
+              thử với dữ liệu của bạn).
+            </p>
+
+            <div id="sim-ivf"></div>
+
+            <div class="demo" id="demo-ivf">
+              <h4 class="demo-title" id="demo-ivf-title">Demo: IVF chỉ quét một phần các cụm, exact search quét tất cả</h4>
+              <div class="demo-body">
+                <div class="demo-plot">
+                  <svg class="ivf-plot" viewBox="0 0 480 480" role="group" aria-labelledby="demo-ivf-title" aria-describedby="demo-ivf-help">
+                    <g class="ivf-cells"></g>
+                    <g class="ivf-links"></g>
+                    <g class="ivf-centroids"></g>
+                    <g class="ivf-points"></g>
+                    <g class="ivf-rings"></g>
+                    <g class="ivf-labels"></g>
+                    <g class="ivf-query" tabindex="0" role="button" aria-label="Điểm truy vấn Q">
+                      <circle class="ivf-hit" r="18"/>
+                      <polygon class="ivf-q" points="0,-9 9,0 0,9 -9,0"/>
+                      <text class="ivf-q-label" x="12" y="-8">Q</text>
+                    </g>
+                  </svg>
+                  <p class="demo-help" id="demo-ivf-help">
+                    Bấm vào vùng vẽ để đặt điểm truy vấn Q, hoặc kéo Q. Bằng bàn phím: chọn Q rồi dùng phím mũi tên (giữ Shift để
+                    nhảy xa hơn). Dữ liệu là 120 điểm 2D, chia thành 8 cụm bằng k-means.
+                  </p>
+                </div>
+
+                <div class="demo-panel">
+                  <div class="slider-row">
+                    <div class="slider-head">
+                      <label for="ivf-nprobe">nprobe: số cụm được quét</label>
+                      <output id="ivf-nprobe-out" for="ivf-nprobe">1</output>
+                    </div>
+                    <input type="range" id="ivf-nprobe" min="1" max="8" step="1" value="1">
+                  </div>
+                  <p class="demo-note">Trong demo, nlist = 8 cụm và k = 5 là cố định.</p>
+
+                  <p class="ivf-summary" data-ivf="summary"></p>
+
+                  <dl class="results">
+                    <div><dt>Cụm được quét</dt><dd><output data-ivf="cells"></output></dd></div>
+                    <div><dt>Điểm được so sánh</dt><dd><output data-ivf="scanned"></output></dd></div>
+                    <div><dt>Phép tính khoảng cách (IVF)</dt><dd><output data-ivf="ops"></output></dd></div>
+                    <div><dt>Recall@5</dt><dd><output data-ivf="recall"></output></dd></div>
+                  </dl>
+
+                  <div class="btn-row">
+                    <button type="button" class="btn" data-action="reset">Đặt lại ví dụ ban đầu</button>
+                  </div>
+                  <p class="sr-only" aria-live="polite" data-ivf="live"></p>
+                </div>
+              </div>
+              <div class="demo-legend">
+                  <ul class="legend">
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><polygon class="ivf-q" points="12,3 21,12 12,21 3,12"/></svg>
+                      <span>Điểm truy vấn Q</span>
+                    </li>
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect class="ivf-cell is-probed" x="2" y="2" width="20" height="20"/></svg>
+                      <span>Nền xanh nhạt: cụm được IVF quét</span>
+                    </li>
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="ivf-dot is-result" cx="12" cy="12" r="5.2"/></svg>
+                      <span>Chấm xanh đặc: điểm IVF trả về (top 5 trong các cụm đã quét)</span>
+                    </li>
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="ivf-dot is-result" cx="12" cy="12" r="5.2"/><circle class="ivf-ring is-hit" cx="12" cy="12" r="10"/></svg>
+                      <span>Vòng nét liền: láng giềng thật (exact top 5) mà IVF đã tìm thấy</span>
+                    </li>
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="ivf-dot" cx="12" cy="12" r="3.6"/><circle class="ivf-ring is-miss" cx="12" cy="12" r="10"/></svg>
+                      <span>Vòng nét đứt đỏ tím: láng giềng thật bị IVF bỏ sót</span>
+                    </li>
+                  </ul>
+              </div>
+            </div>
+
+            <p>Một số thí nghiệm nên thử:</p>
+            <ul>
+              <li>Lúc mới mở, <code>nprobe = 1</code> và IVF chỉ tìm đúng 3 trong 5 láng giềng: hai vòng nét đứt đánh dấu hai điểm nằm ở cụm bên kia ranh giới. Kéo thanh trượt lên 2 là tìm đủ 5/5.</li>
+              <li>Giữ <code>nprobe = 1</code> rồi kéo Q tới những chỗ khác nhau. Q nằm giữa cụm thường tìm đủ; Q sát một đường ranh giới thì dễ bỏ sót.</li>
+              <li>Tăng <code>nprobe</code> từng nấc và xem recall tăng dần, trong khi số điểm phải so sánh cũng tăng.</li>
+              <li>Đặt <code>nprobe = 8</code>: recall luôn bằng 1, nhưng số phép tính (8 so với centroid + 120 so với điểm) còn lớn hơn exact search (120). IVF chỉ có lợi khi <code>nprobe</code> nhỏ hơn nhiều so với <code>nlist</code>.</li>
+            </ul>
+
+            <h3 id="pq">PQ: nén vector bằng “bảng mã”</h3>
+            <p>
+              Ảnh phác họa chân dung thường được ghép từ một kho mắt, mũi, miệng đã đánh số sẵn. Thay vì lưu bức ảnh chi tiết,
+              ta chỉ lưu “mắt số 17, mũi số 203, ...”. Ảnh dựng lại không giống hệt nhưng đủ gần, và bộ nhớ giảm rất nhiều.
+              <strong>Product Quantization (PQ)</strong> nén vector theo đúng tinh thần đó:
+            </p>
+            <ol>
+              <li>Chia vector <em>D</em> chiều thành <em>m</em> đoạn, mỗi đoạn <em>D/m</em> chiều.</li>
+              <li>Với mỗi đoạn, chạy k-means trên phần tương ứng của dữ liệu huấn luyện để có một <strong>codebook</strong> gồm (thường) 256 centroid. Mỗi centroid có một số thứ tự vừa trong 1 byte.</li>
+              <li>Mã hóa: thay mỗi đoạn của vector bằng số thứ tự của centroid gần nhất trong codebook của đoạn đó. Vector chỉ còn <em>m</em> byte.</li>
+            </ol>
+
+            <figure class="figure">
+              <div class="scroll-x" tabindex="0" role="region" aria-label="Sơ đồ mã hóa Product Quantization, có thể cuộn ngang">
+                <svg viewBox="0 0 560 300" role="img" aria-labelledby="fig-pq-title fig-pq-desc">
+                  <title id="fig-pq-title">Mã hóa một vector 128 chiều bằng Product Quantization với m bằng 4</title>
+                  <desc id="fig-pq-desc">Vector 128 chiều được chia thành bốn đoạn, mỗi đoạn 32 chiều. Mỗi đoạn được so với codebook gồm 256 centroid của chính nó và được thay bằng số thứ tự của centroid gần nhất, ví dụ 17, 203, 5 và 88. Kết quả là mã PQ dài 4 byte.</desc>
+                  <defs>
+                    <marker id="pq-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                      <path class="pq-arrowhead" d="M0 0 L10 5 L0 10 z"/>
+                    </marker>
+                  </defs>
+
+                  <text class="pq-note" x="16" y="18">Vector gốc: 128 chiều × 4 byte = 512 byte</text>
+
+                  <rect class="pq-seg" x="16" y="28" width="118" height="44"/>
+                  <text class="pq-title" x="75" y="48">Đoạn 1</text>
+                  <text class="pq-sub" x="75" y="64">32 chiều</text>
+                  <rect class="pq-seg" x="154" y="28" width="118" height="44"/>
+                  <text class="pq-title" x="213" y="48">Đoạn 2</text>
+                  <text class="pq-sub" x="213" y="64">32 chiều</text>
+                  <rect class="pq-seg" x="292" y="28" width="118" height="44"/>
+                  <text class="pq-title" x="351" y="48">Đoạn 3</text>
+                  <text class="pq-sub" x="351" y="64">32 chiều</text>
+                  <rect class="pq-seg" x="430" y="28" width="118" height="44"/>
+                  <text class="pq-title" x="489" y="48">Đoạn 4</text>
+                  <text class="pq-sub" x="489" y="64">32 chiều</text>
+
+                  <line class="pq-arrow" x1="75" y1="72" x2="75" y2="112" marker-end="url(#pq-arrow)"/>
+                  <line class="pq-arrow" x1="213" y1="72" x2="213" y2="112" marker-end="url(#pq-arrow)"/>
+                  <line class="pq-arrow" x1="351" y1="72" x2="351" y2="112" marker-end="url(#pq-arrow)"/>
+                  <line class="pq-arrow" x1="489" y1="72" x2="489" y2="112" marker-end="url(#pq-arrow)"/>
+                  <text class="pq-note" x="83" y="96">tìm centroid gần nhất</text>
+
+                  <rect class="pq-book" x="16" y="116" width="118" height="52"/>
+                  <text class="pq-title" x="75" y="138">Codebook 1</text>
+                  <text class="pq-sub" x="75" y="156">256 centroid</text>
+                  <rect class="pq-book" x="154" y="116" width="118" height="52"/>
+                  <text class="pq-title" x="213" y="138">Codebook 2</text>
+                  <text class="pq-sub" x="213" y="156">256 centroid</text>
+                  <rect class="pq-book" x="292" y="116" width="118" height="52"/>
+                  <text class="pq-title" x="351" y="138">Codebook 3</text>
+                  <text class="pq-sub" x="351" y="156">256 centroid</text>
+                  <rect class="pq-book" x="430" y="116" width="118" height="52"/>
+                  <text class="pq-title" x="489" y="138">Codebook 4</text>
+                  <text class="pq-sub" x="489" y="156">256 centroid</text>
+
+                  <line class="pq-arrow" x1="75" y1="168" x2="75" y2="204" marker-end="url(#pq-arrow)"/>
+                  <line class="pq-arrow" x1="213" y1="168" x2="213" y2="204" marker-end="url(#pq-arrow)"/>
+                  <line class="pq-arrow" x1="351" y1="168" x2="351" y2="204" marker-end="url(#pq-arrow)"/>
+                  <line class="pq-arrow" x1="489" y1="168" x2="489" y2="204" marker-end="url(#pq-arrow)"/>
+                  <text class="pq-note" x="83" y="192">lấy số thứ tự</text>
+
+                  <rect class="pq-code" x="16" y="208" width="118" height="40"/>
+                  <text class="pq-code-text" x="75" y="234">17</text>
+                  <rect class="pq-code" x="154" y="208" width="118" height="40"/>
+                  <text class="pq-code-text" x="213" y="234">203</text>
+                  <rect class="pq-code" x="292" y="208" width="118" height="40"/>
+                  <text class="pq-code-text" x="351" y="234">5</text>
+                  <rect class="pq-code" x="430" y="208" width="118" height="40"/>
+                  <text class="pq-code-text" x="489" y="234">88</text>
+
+                  <text class="pq-sub" x="75" y="264">1 byte</text>
+                  <text class="pq-sub" x="213" y="264">1 byte</text>
+                  <text class="pq-sub" x="351" y="264">1 byte</text>
+                  <text class="pq-sub" x="489" y="264">1 byte</text>
+                  <text class="pq-total" x="280" y="291">Mã PQ: 4 byte (nhỏ hơn 128 lần so với 512 byte)</text>
+                </svg>
+              </div>
+              <figcaption>
+                Ví dụ minh họa với <em>m</em> = 4; các số thứ tự 17, 203, 5, 88 là số chọn tay. Thực tế <em>m</em> thường lớn hơn:
+                <em>m</em> càng lớn thì mã càng dài, xấp xỉ càng chính xác và mức nén càng thấp.
+                <span class="only-narrow">Vuốt ngang để xem toàn bộ hình.</span>
+              </figcaption>
+            </figure>
+
+            <p>
+              <strong>Vì sao gọi là “product”?</strong> Mỗi vector được xây từ tổ hợp của <em>m</em> codebook, nên số vector mà
+              PQ có thể biểu diễn là tích của các codebook. Với <em>m</em> = 4 và 256 centroid mỗi codebook, đó là
+              256<sup>4</sup> ≈ 4,3 tỉ tổ hợp, trong khi chỉ phải lưu 4 × 256 = 1024 centroid. Codebook nhỏ và dùng chung cho mọi vector,
+              nên bộ nhớ chủ yếu nằm ở các mã <em>m</em> byte.
+            </p>
+            <p>
+              <strong>Tìm kiếm trên mã PQ.</strong> Hệ thống không cần giải nén. Với mỗi truy vấn, nó tính trước một bảng khoảng
+              cách từ từng đoạn của Q tới 256 centroid của đoạn đó. Khoảng cách xấp xỉ tới một vector đã nén chỉ là tổng của
+              <em>m</em> giá trị tra từ bảng. Kỹ thuật này gọi là tính khoảng cách bất đối xứng (ADC): truy vấn giữ nguyên độ chính xác,
+              chỉ có phía dữ liệu bị nén.
+            </p>
+
+            <div class="callout warn">
+              <p class="callout-title">PQ là kỹ thuật nén, không phải chỉ mục tìm kiếm</p>
+              <p>
+                Khoảng cách tính trên mã PQ chỉ là xấp xỉ nên thứ hạng có thể lệch. PQ đứng một mình vẫn phải đi qua mọi mã
+                (nhanh hơn nhờ mã nhỏ và tra bảng, nhưng vẫn tăng tuyến tính theo <em>N</em>). Vì vậy PQ thường đi cùng IVF
+                (<strong>IVF-PQ</strong>): IVF thu hẹp phạm vi tìm vào vài cụm, còn PQ nén các vector trong cụm. Nhiều hệ thống
+                còn lấy một số ứng viên đầu bảng rồi xếp hạng lại bằng vector gốc để bù phần độ chính xác đã mất.
+              </p>
+            </div>
+
+            <div id="sim-pq"></div>
+
+            <h3 id="so-sanh-ann">Bảng tổng hợp: ưu, nhược điểm và trường hợp dùng</h3>
+            <p>Bảng dưới chỉ so sánh định tính. Số liệu hiệu năng cụ thể phụ thuộc vào dữ liệu, phần cứng và cách cài đặt, nên hãy tự đo.</p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng so sánh Flat, HNSW, IVF và PQ">
+              <table class="table--wide">
+                <caption class="sr-only">So sánh Flat, HNSW, IVF và PQ</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Phương pháp</th>
+                    <th scope="col">Ý tưởng</th>
+                    <th scope="col">Ưu điểm</th>
+                    <th scope="col">Nhược điểm</th>
+                    <th scope="col">Nên dùng khi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Flat</th>
+                    <td>So Q với mọi vector.</td>
+                    <td>Kết quả chính xác 100%. Không cần dựng chỉ mục hay huấn luyện. Thêm hoặc xóa dữ liệu dễ.</td>
+                    <td>Thời gian truy vấn tăng tuyến tính theo <em>N</em>, chậm khi dữ liệu lớn.</td>
+                    <td>Dữ liệu nhỏ; cần kết quả tuyệt đối chính xác; làm “đáp án thật” để đo recall của các chỉ mục ANN.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">HNSW</th>
+                    <td>Đồ thị nhiều tầng, đi tham lam từ tầng trên xuống tầng dưới.</td>
+                    <td>Thường cho cân bằng rất tốt giữa tốc độ truy vấn và recall. Không cần bước huấn luyện. Chèn vector mới tương đối dễ.</td>
+                    <td>Tốn bộ nhớ vì phải lưu cả vector lẫn các liên kết. Dựng chỉ mục khá lâu. Xóa hoặc cập nhật vector thường phức tạp, tùy cài đặt.</td>
+                    <td>Cần độ trễ thấp và recall cao, và dữ liệu cùng chỉ mục còn vừa trong RAM.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">IVF</th>
+                    <td>Chia cụm bằng k-means, chỉ quét <code>nprobe</code> cụm gần Q nhất.</td>
+                    <td>Dễ hiểu và dễ chỉnh đánh đổi bằng <code>nprobe</code>. Chỉ mục gọn hơn đồ thị vì chủ yếu lưu vector và centroid.</td>
+                    <td>Phải huấn luyện k-means trước. Dễ bỏ sót khi Q nằm gần ranh giới cụm. Nếu phân bố dữ liệu đổi nhiều, các cụm cũ kém phù hợp và cần huấn luyện lại.</td>
+                    <td>Dữ liệu lớn khi cần cân bằng giữa bộ nhớ và tốc độ, và phân bố dữ liệu khá ổn định.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">PQ</th>
+                    <td>Chia vector thành đoạn, mã hóa từng đoạn bằng codebook.</td>
+                    <td>Giảm bộ nhớ rất mạnh. Tính khoảng cách nhanh nhờ tra bảng.</td>
+                    <td>Mất thông tin nên khoảng cách chỉ là xấp xỉ và recall giảm. Phải huấn luyện codebook. Tự nó không thu hẹp phạm vi tìm.</td>
+                    <td>Dữ liệu rất lớn mà RAM bị giới hạn. Thường dùng cùng IVF (IVF-PQ), có thể kèm bước xếp hạng lại bằng vector gốc.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <p class="callout-title">Chọn thế nào cho nhanh?</p>
+              <ul>
+                <li>Dữ liệu nhỏ, hoặc bắt buộc kết quả chính xác: Flat.</li>
+                <li>Còn vừa RAM và cần truy vấn nhanh, recall cao: HNSW.</li>
+                <li>Dữ liệu rất lớn, RAM không đủ: IVF-PQ, có thể kèm xếp hạng lại.</li>
+              </ul>
+              <p>
+                Đây là gợi ý xuất phát, không phải quy tắc cứng. Dù chọn gì, hãy đo recall (so với Flat) và độ trễ trên dữ liệu
+                và truy vấn thật của bạn.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="section" id="memory" aria-labelledby="memory-title">
+          <h2 id="memory-title">3. AI Memory Management</h2>
+          <p class="section-lead">AI nhớ và dùng lại thông tin thế nào, và khác biệt giữa context window, lịch sử hội thoại và memory.</p>
+          <div class="prose">
+
+            <h3 id="memory-la-gi">AI Memory là gì?</h3>
+            <p>
+              Một mô hình ngôn ngữ (LLM) tự nó không nhớ gì giữa hai lần gọi. Mỗi lần, nó chỉ nhìn thấy đúng những token nằm
+              trong đầu vào của lần gọi đó. Cảm giác “AI nhớ mình” đến từ hệ thống bao quanh mô hình: nó lưu thông tin ở đâu đó
+              và nhét lại vào đầu vào khi cần. <strong>AI Memory</strong> là toàn bộ cơ chế lưu, tìm lại và cập nhật thông tin
+              như vậy.
+            </p>
+            <p>
+              Cần phân biệt với kiến thức đã học trong lúc huấn luyện (nằm trong trọng số của mô hình, không đổi theo từng người
+              dùng). Memory là thông tin bên ngoài mô hình, có thể thêm, sửa, xóa mà không phải huấn luyện lại.
+            </p>
+            <p>
+              Một phép ví von dễ nhớ: <strong>context window</strong> là mặt bàn làm việc (diện tích có hạn, chỉ để vừa vài
+              tập giấy), <strong>conversation history</strong> là cuốn sổ ghi chép buổi họp đang diễn ra, còn
+              <strong>memory</strong> là tủ hồ sơ trong phòng: bạn rút ra đúng tập cần dùng và đặt lên bàn.
+            </p>
+
+            <h3 id="short-long">Short-term Memory và Long-term Memory</h3>
+            <ul>
+              <li><strong>Short-term memory</strong> là thông tin dùng trong phiên hội thoại hiện tại: các tin nhắn gần đây, kết quả công cụ vừa gọi, kế hoạch đang làm dở. Nó nằm ngay trong prompt nên mô hình “thấy” trực tiếp, nhưng bị giới hạn bởi context window và mất khi phiên kết thúc (trừ khi được lưu lại).</li>
+              <li><strong>Long-term memory</strong> là thông tin được lưu bên ngoài prompt để dùng qua nhiều phiên: sở thích của người dùng, sự kiện đã xảy ra, tài liệu tham khảo. Nó chỉ vào prompt khi được truy xuất, nên dung lượng gần như không bị giới hạn bởi context window, nhưng chất lượng phụ thuộc vào việc tìm lại có đúng không.</li>
+            </ul>
+
+            <h3 id="ba-khai-niem">Context Window, Conversation History và Memory khác nhau thế nào?</h3>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng so sánh context window, conversation history và memory">
+              <table class="table--wide">
+                <caption class="sr-only">So sánh context window, conversation history và memory</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Khái niệm</th>
+                    <th scope="col">Là gì</th>
+                    <th scope="col">Tồn tại ở đâu, bao lâu</th>
+                    <th scope="col">Hạn chế</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Context window</th>
+                    <td>Số token tối đa mô hình xử lý trong một lần gọi. Chứa mọi thứ: chỉ dẫn hệ thống, lịch sử, tài liệu truy xuất, tin nhắn mới và cả câu trả lời đang sinh ra.</td>
+                    <td>Là giới hạn của mô hình, không phải nơi lưu trữ. Nội dung chỉ tồn tại trong lần gọi đó.</td>
+                    <td>Giới hạn cứng. Vượt quá thì phải cắt bớt hoặc tóm tắt. Nhồi quá nhiều cũng tốn chi phí và có thể làm mô hình khó tập trung.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Conversation history</th>
+                    <td>Chuỗi tin nhắn đã trao đổi trong một phiên.</td>
+                    <td>Do ứng dụng lưu và gửi lại cho mô hình ở mỗi lượt. Gắn với một phiên hội thoại.</td>
+                    <td>Càng dài càng tốn token và có thể vượt context window, nên phải cắt hoặc tóm tắt.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Memory</th>
+                    <td>Thông tin chọn lọc được lưu ngoài prompt (cơ sở dữ liệu, vector DB) và được truy xuất lại khi liên quan.</td>
+                    <td>Tồn tại qua nhiều phiên, cho tới khi bị cập nhật hoặc xóa.</td>
+                    <td>Có thể truy xuất nhầm, để lại thông tin lỗi thời hoặc mâu thuẫn; cần quy tắc ghi, cập nhật và xóa.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>Sơ đồ dưới cho thấy ba thứ này gặp nhau ở đâu trong một lượt hỏi đáp:</p>
+
+            <figure class="figure">
+              <div class="scroll-x" tabindex="0" role="region" aria-label="Sơ đồ kiến trúc memory của AI, có thể cuộn ngang">
+                <svg viewBox="0 0 610 330" role="img" aria-labelledby="fig-mm-title fig-mm-desc">
+                  <title id="fig-mm-title">Cách memory đi vào một lượt hỏi đáp</title>
+                  <desc id="fig-mm-desc">Tin nhắn mới đến. Hệ thống lấy lịch sử hội thoại gần đây và tìm trong memory dài hạn những mục liên quan. Cả hai được ghép với tin nhắn mới thành prompt, phải vừa trong context window. Mô hình sinh câu trả lời. Sau đó hệ thống ghi lại thông tin đáng nhớ vào memory dài hạn.</desc>
+                  <defs>
+                    <marker id="mm-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                      <path class="mm-arrowhead" d="M0 0 L10 5 L0 10 z"/>
+                    </marker>
+                    <marker id="mm-arrow-w" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                      <path class="mm-arrowhead is-write" d="M0 0 L10 5 L0 10 z"/>
+                    </marker>
+                  </defs>
+
+                  <rect class="mm-box" x="200" y="14" width="200" height="40"/>
+                  <text class="mm-title" x="300" y="39">Tin nhắn mới</text>
+
+                  <line class="mm-arrow" x1="250" y1="54" x2="170" y2="86" marker-end="url(#mm-arrow)"/>
+                  <line class="mm-arrow" x1="350" y1="54" x2="430" y2="86" marker-end="url(#mm-arrow)"/>
+                  <text class="mm-note" x="425" y="68">tìm memory liên quan</text>
+
+                  <rect class="mm-box" x="16" y="90" width="250" height="58"/>
+                  <text class="mm-title" x="141" y="114">Lịch sử hội thoại gần đây</text>
+                  <text class="mm-sub" x="141" y="133">short-term: vài lượt cuối</text>
+
+                  <rect class="mm-box is-ltm" x="294" y="90" width="250" height="58"/>
+                  <text class="mm-title" x="419" y="114">Memory dài hạn</text>
+                  <text class="mm-sub" x="419" y="133">facts, bản tóm tắt, vector DB</text>
+
+                  <line class="mm-arrow" x1="141" y1="148" x2="141" y2="186" marker-end="url(#mm-arrow)"/>
+                  <line class="mm-arrow" x1="419" y1="148" x2="419" y2="186" marker-end="url(#mm-arrow)"/>
+                  <text class="mm-note" x="427" y="172">mục liên quan nhất</text>
+
+                  <rect class="mm-box is-prompt" x="16" y="190" width="528" height="58"/>
+                  <text class="mm-title" x="280" y="214">Prompt gửi cho mô hình (phải vừa context window)</text>
+                  <text class="mm-sub" x="280" y="234">chỉ dẫn + memory liên quan + lịch sử gần đây + tin nhắn mới</text>
+
+                  <line class="mm-arrow" x1="280" y1="248" x2="280" y2="272" marker-end="url(#mm-arrow)"/>
+
+                  <rect class="mm-box is-llm" x="200" y="276" width="160" height="38"/>
+                  <text class="mm-title" x="280" y="300">LLM</text>
+                  <line class="mm-arrow" x1="360" y1="295" x2="398" y2="295" marker-end="url(#mm-arrow)"/>
+                  <rect class="mm-box" x="402" y="276" width="142" height="38"/>
+                  <text class="mm-title" x="473" y="300">Câu trả lời</text>
+
+                  <path class="mm-arrow is-write" d="M544 295 H580 V119 H548" marker-end="url(#mm-arrow-w)"/>
+                  <text class="mm-note is-write" transform="translate(597 250) rotate(-90)">ghi lại, cập nhật</text>
+                </svg>
+              </div>
+              <figcaption>
+                Nét liền là luồng đọc dữ liệu vào prompt; nét đứt đỏ tím là bước ghi lại thông tin đáng nhớ sau mỗi lượt.
+                <span class="only-narrow">Vuốt ngang để xem toàn bộ hình.</span>
+              </figcaption>
+            </figure>
+
+            <h3 id="luu-truy-xuat-cap-nhat">Lưu trữ, truy xuất và cập nhật memory</h3>
+            <h4>Lưu trữ</h4>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng các phương pháp lưu memory">
+              <table class="table--wide">
+                <caption class="sr-only">Các phương pháp lưu memory</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Phương pháp</th>
+                    <th scope="col">Cách làm</th>
+                    <th scope="col">Ưu điểm</th>
+                    <th scope="col">Nhược điểm</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Sliding window</th>
+                    <td>Chỉ giữ các lượt (hoặc token) gần nhất, bỏ phần cũ hơn.</td>
+                    <td>Đơn giản, rẻ, dễ dự đoán.</td>
+                    <td>Quên hẳn mọi thứ nằm ngoài cửa sổ, kể cả thông tin quan trọng ở đầu phiên.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Tóm tắt hội thoại</th>
+                    <td>Nén phần cũ thành một bản tóm tắt, giữ nguyên các lượt gần nhất.</td>
+                    <td>Giữ được ý chính của cả phiên dài trong ít token.</td>
+                    <td>Mất chi tiết. Nếu bản tóm tắt sai thì lỗi được mang theo ở các lượt sau.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Facts có cấu trúc</th>
+                    <td>Trích các sự kiện ngắn (tên, sở thích, quyết định) và lưu dạng danh sách hoặc cặp khóa-giá trị.</td>
+                    <td>Gọn, dễ kiểm tra, dễ sửa hoặc xóa từng mục.</td>
+                    <td>Chỉ chứa được những gì bước trích xuất nhận ra; dễ bỏ sót sắc thái.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Embedding trong vector DB</th>
+                    <td>Lưu ghi chú hoặc đoạn hội thoại dưới dạng vector (Phần 1) kèm metadata như người dùng, thời gian.</td>
+                    <td>Tìm theo nghĩa, lưu được lượng lớn và nhiều loại nội dung.</td>
+                    <td>Có thể lấy nhầm mục chỉ “nghe gần giống”. Khó biết mục nào đã lỗi thời nếu không có metadata.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4>Truy xuất</h4>
+            <p>
+              Khi có tin nhắn mới, hệ thống không nhét toàn bộ memory vào prompt mà chọn ra vài mục đáng dùng nhất. Các tiêu chí
+              thường gặp, hay được kết hợp với nhau:
+            </p>
+            <ul>
+              <li><strong>Độ liên quan:</strong> mục nào gần nghĩa với tin nhắn mới (tìm vector, có thể thêm tìm từ khóa, xem Phần 5).</li>
+              <li><strong>Độ mới:</strong> ưu tiên thông tin gần đây khi hai mục nói về cùng một chuyện.</li>
+              <li><strong>Độ quan trọng:</strong> ưu tiên các mục được đánh dấu là quan trọng (ví dụ dị ứng, ràng buộc cứng).</li>
+              <li><strong>Bộ lọc metadata:</strong> chỉ tìm trong memory của đúng người dùng, đúng dự án.</li>
+            </ul>
+
+            <h4>Cập nhật</h4>
+            <p>
+              Memory không phải kho chỉ thêm vào. Sau mỗi lượt (hoặc theo lô), một bước xử lý nên quyết định với thông tin mới:
+              <strong>thêm</strong> nếu là điều mới, <strong>ghi đè</strong> nếu mâu thuẫn với điều cũ (giữ thời điểm cập nhật),
+              <strong>gộp</strong> nếu trùng, <strong>xóa hoặc cho hết hạn</strong> nếu không còn đúng, và <strong>bỏ qua</strong>
+              nếu chỉ là chuyện nhất thời. Người dùng cũng nên có cách xem, sửa và xóa những gì hệ thống đã nhớ về họ.
+            </p>
+
+            <h3 id="vi-du-memory">Ví dụ: thông tin nào đi vào đâu?</h3>
+            <p>Hội thoại minh họa (nhân vật hư cấu), cho thấy thông tin nào chỉ nằm trong phiên và thông tin nào được lưu lâu dài:</p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng ví dụ hội thoại và memory">
+              <table class="table--wide">
+                <caption class="sr-only">Ví dụ phân loại thông tin vào short-term và long-term memory</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Lượt</th>
+                    <th scope="col">Người dùng nói</th>
+                    <th scope="col">Short-term (trong phiên)</th>
+                    <th scope="col">Long-term memory</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">1</th>
+                    <td>“Chào, mình là Lan, đang học năm 3 ngành CNTT.”</td>
+                    <td>Có, nằm trong lịch sử.</td>
+                    <td>Lưu: tên là Lan; sinh viên năm 3 CNTT.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">2</th>
+                    <td>“Gợi ý giúp mình cách học thuật toán.”</td>
+                    <td>Có.</td>
+                    <td>Không lưu: yêu cầu tức thời.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">3</th>
+                    <td>“Mình thích ví dụ bằng Python, đừng dùng C++ nhé.”</td>
+                    <td>Có.</td>
+                    <td>Lưu: ưa ví dụ Python, tránh C++ (sở thích bền vững).</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">4</th>
+                    <td>“Hôm nay mình hơi mệt.”</td>
+                    <td>Có.</td>
+                    <td>Không lưu: chỉ đúng lúc này.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Phiên mới, hôm sau</th>
+                    <td>“Giải thích giúp mình quicksort.”</td>
+                    <td>Trống: phiên mới, lịch sử cũ không còn trong prompt.</td>
+                    <td>Truy xuất “ưa ví dụ Python” và đưa vào prompt, nên câu trả lời dùng Python.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Vài tháng sau</th>
+                    <td>“Mình lên năm 4 rồi.”</td>
+                    <td>Có.</td>
+                    <td>Cập nhật: “năm 3” được ghi đè thành “năm 4”, kèm thời điểm.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout warn">
+              <p class="callout-title">Những rủi ro cần tính trước</p>
+              <ul>
+                <li><strong>Truy xuất nhầm hoặc thiếu:</strong> nhét sai memory vào prompt có thể làm câu trả lời tệ hơn không có memory.</li>
+                <li><strong>Thông tin lỗi thời hoặc mâu thuẫn:</strong> cần quy tắc ghi đè và dấu thời gian (xem thêm Phần 5).</li>
+                <li><strong>Quyền riêng tư:</strong> chỉ lưu những gì thật sự cần, tách memory theo người dùng, và cho người dùng quyền xem và xóa.</li>
+              </ul>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="section" id="chunking" aria-labelledby="chunking-title">
+          <h2 id="chunking-title">4. Chunking Strategies</h2>
+          <p class="section-lead">Cắt tài liệu thành các đoạn để truy xuất đúng chỗ: các phương pháp, chunk size và chunk overlap.</p>
+          <div class="prose">
+
+            <h3 id="chunking-la-gi">Chunking là gì và vì sao cần?</h3>
+            <p>
+              Một cuốn giáo trình dày 400 trang không ai chép lại thành một thẻ ghi chú duy nhất. Ta tách nó thành nhiều thẻ,
+              mỗi thẻ một ý, để sau này rút đúng thẻ cần dùng. <strong>Chunking</strong> là việc cắt tài liệu dài thành các
+              đoạn nhỏ (chunk) trước khi tạo embedding và lưu vào vector database. Có ba lý do chính:
+            </p>
+            <ul>
+              <li><strong>Giới hạn kích thước:</strong> mô hình embedding chỉ nhận được một lượng token nhất định mỗi lần, và context window của LLM cũng có hạn. Đưa cả tài liệu vào là không khả thi.</li>
+              <li><strong>Độ chính xác khi tìm:</strong> một vector đại diện cho cả tài liệu dài là “nghĩa trung bình” của nhiều chủ đề trộn lẫn, nên khó khớp với một câu hỏi cụ thể. Chunk nhỏ hơn thì nghĩa tập trung hơn.</li>
+              <li><strong>Chi phí:</strong> chỉ chunk liên quan mới được đưa vào prompt, thay vì cả tài liệu. Tiết kiệm token và giúp mô hình bớt bị nhiễu.</li>
+            </ul>
+
+            <h3 id="ck-methods">Các phương pháp chunking phổ biến</h3>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng so sánh các phương pháp chunking">
+              <table class="table--wide">
+                <caption class="sr-only">So sánh các phương pháp chunking</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Phương pháp</th>
+                    <th scope="col">Cách làm</th>
+                    <th scope="col">Ưu điểm</th>
+                    <th scope="col">Nhược điểm</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Fixed-size</th>
+                    <td>Cắt mỗi <em>N</em> ký tự hoặc token, không quan tâm nội dung.</td>
+                    <td>Đơn giản, nhanh, chunk đều nhau nên dễ dự đoán chi phí. Hợp để làm mốc so sánh ban đầu.</td>
+                    <td>Hay cắt ngang câu hoặc ngang ý, làm chunk mất nghĩa.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Recursive splitting</th>
+                    <td>Thử cắt theo dấu phân cách từ lớn đến nhỏ (đoạn, dòng, câu, từ) cho tới khi mỗi mảnh vừa giới hạn.</td>
+                    <td>Tôn trọng ranh giới tự nhiên khi có thể mà vẫn kiểm soát được kích thước. Thường là lựa chọn mặc định hợp lý.</td>
+                    <td>Vẫn có thể cắt giữa ý nếu một đoạn quá dài. Chunk không đều nhau.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Theo câu hoặc đoạn</th>
+                    <td>Gom các câu (hoặc đoạn) liền nhau cho đến khi đạt kích thước mong muốn.</td>
+                    <td>Mỗi chunk gồm những câu trọn vẹn.</td>
+                    <td>Cần tách câu đúng (viết tắt, danh sách, tiếng Việt có dấu chấm trong số). Độ dài đoạn thất thường.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Theo cấu trúc tài liệu</th>
+                    <td>Cắt theo tiêu đề, mục, bảng, hàm hoặc lớp trong mã nguồn, từng slide.</td>
+                    <td>Giữ đúng đơn vị ý nghĩa mà tác giả đã tổ chức; gắn được tiêu đề làm metadata cho chunk.</td>
+                    <td>Cần bộ đọc riêng cho từng định dạng. Mục quá dài vẫn phải cắt tiếp. Tài liệu lộn xộn (PDF quét) khó áp dụng.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Semantic chunking</th>
+                    <td>Tạo embedding cho từng câu, cắt ở chỗ độ tương đồng giữa hai câu liền kề tụt mạnh (đổi chủ đề).</td>
+                    <td>Ranh giới bám theo nghĩa chứ không theo độ dài.</td>
+                    <td>Tốn thêm lượt embedding khi lập chỉ mục, cần chỉnh ngưỡng, chunk không đều. Mức cải thiện so với recursive chưa chắc rõ trên mọi dữ liệu [chưa kiểm chứng].</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 id="size-overlap">Chunk size và chunk overlap</h3>
+            <p>
+              <strong>Chunk size</strong> là độ dài tối đa của mỗi chunk (tính bằng ký tự hoặc token).
+              <strong>Chunk overlap</strong> là phần cuối của chunk trước được lặp lại ở đầu chunk sau, để một câu hay một ý nằm
+              sát ranh giới vẫn xuất hiện nguyên vẹn trong ít nhất một chunk.
+            </p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng đánh đổi giữa chunk nhỏ và chunk lớn">
+              <table>
+                <caption class="sr-only">Đánh đổi giữa chunk nhỏ và chunk lớn</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Tiêu chí</th>
+                    <th scope="col">Chunk nhỏ</th>
+                    <th scope="col">Chunk lớn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Độ chính xác khi khớp</th>
+                    <td>Cao: nghĩa tập trung, khớp được câu hỏi cụ thể.</td>
+                    <td>Thấp hơn: vector bị “pha loãng” bởi nhiều ý khác nhau.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Ngữ cảnh</th>
+                    <td>Dễ thiếu: ý bị tách khỏi phần giải thích đi kèm.</td>
+                    <td>Đầy đủ hơn, mô hình hiểu rõ hơn.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Nhiễu và chi phí</th>
+                    <td>Ít nhiễu mỗi chunk, nhưng có nhiều chunk hơn (nhiều vector hơn).</td>
+                    <td>Mỗi chunk đưa vào prompt tốn nhiều token và chứa nhiều thông tin thừa.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              Overlap giải quyết một phần vấn đề ranh giới nhưng có giá: tổng số ký tự phải lưu và embed tăng lên, và cùng một
+              nội dung có thể xuất hiện ở hai chunk nên kết quả tìm kiếm có thể lặp. Tỉ lệ càng cao, chi phí này càng lớn.
+            </p>
+            <div class="callout warn">
+              <p class="callout-title">Về các con số gợi ý</p>
+              <p>
+                Nhiều hướng dẫn nhắc tới chunk khoảng 256 đến 1024 token và overlap khoảng 10 đến 20% kích thước chunk. Đây là
+                gợi ý thực nghiệm, cần thử với dữ liệu của bạn: loại tài liệu, độ dài câu hỏi và mô hình embedding đều làm kết quả
+                thay đổi.
+              </p>
+            </div>
+
+            <h3 id="ck-anh-huong">Ảnh hưởng của chunking đến chất lượng retrieval</h3>
+            <p>
+              Chunking quyết định “đơn vị” mà hệ thống tìm kiếm và đưa cho mô hình. Nếu đơn vị đó cắt hỏng, các bước sau (embedding,
+              tìm kiếm, rerank) có tốt đến đâu cũng khó cứu. Ví dụ dưới đây (minh họa) cho thấy một câu bị cắt đôi làm mất nghĩa:
+            </p>
+            <p>
+              Tài liệu: <em>“Chính sách đổi trả: khách hàng được đổi trả trong 7 ngày kể từ khi nhận hàng. Sản phẩm phải còn nguyên tem và chưa qua sử dụng.”</em>
+              Câu hỏi: <em>“Điều kiện để đổi trả là gì?”</em>
+            </p>
+            <div class="ck-example">
+              <div class="ck-case">
+                <h5>Cắt cứng theo số ký tự</h5>
+                <div class="ck-piece"><small>Chunk 1</small>Chính sách đổi trả: khách hàng được đổi trả trong 7 ngày kể từ khi nhận hàng. Sản phẩm phải còn<b> ✂</b></div>
+                <div class="ck-piece"><small>Chunk 2</small>nguyên tem và chưa qua sử dụng.</div>
+                <p>Câu về điều kiện bị tách làm đôi. Chunk 2 chứa phần quan trọng nhưng không còn nhắc tới “đổi trả”, nên có thể không được tìm thấy; nếu được tìm thấy, mô hình chỉ thấy một mẩu thiếu chủ ngữ.</p>
+              </div>
+              <div class="ck-case is-good">
+                <h5>Cắt theo câu, overlap một câu</h5>
+                <div class="ck-piece"><small>Chunk 1</small>Chính sách đổi trả: khách hàng được đổi trả trong 7 ngày kể từ khi nhận hàng.</div>
+                <div class="ck-piece"><small>Chunk 2 (lặp lại câu 1 làm ngữ cảnh)</small>Chính sách đổi trả: khách hàng được đổi trả trong 7 ngày kể từ khi nhận hàng. Sản phẩm phải còn nguyên tem và chưa qua sử dụng.</div>
+                <p>Chunk 2 có đủ cả chủ đề lẫn điều kiện nên khớp được câu hỏi. Cái giá là câu 1 xuất hiện hai lần.</p>
+              </div>
+            </div>
+            <p>Ngoài ví dụ trên, chunking còn ảnh hưởng tới retrieval theo những cách sau:</p>
+            <ul>
+              <li><strong>Recall:</strong> nếu câu trả lời bị chia sang hai chunk, có thể không chunk nào đủ điểm để lọt vào top-<em>k</em>.</li>
+              <li><strong>Độ nhiễu:</strong> chunk quá lớn kéo theo nhiều nội dung không liên quan vào prompt.</li>
+              <li><strong>Trùng lặp:</strong> overlap cao làm top-<em>k</em> chứa nhiều chunk gần giống nhau, chiếm chỗ của thông tin khác (xem Phần 5).</li>
+              <li><strong>Mẹo thường dùng:</strong> gắn tiêu đề tài liệu hoặc mục vào metadata hay đầu mỗi chunk; hoặc tìm bằng chunk nhỏ rồi trả về đoạn lớn hơn chứa nó (parent document, small-to-big).</li>
+            </ul>
+            <p>
+              Cách chọn chiến lược đáng tin nhất là đo: lập một bộ câu hỏi mẫu kèm đoạn chứa đáp án, thử vài cấu hình (kích thước,
+              overlap, phương pháp) rồi so tỉ lệ câu hỏi mà chunk đúng lọt vào top-<em>k</em>.
+            </p>
+
+            <div class="demo" id="demo-chunking">
+              <h4 class="demo-title" id="demo-chunking-title">Demo: chunk size và overlap thay đổi cách cắt thế nào</h4>
+              <div class="demo-stack">
+                <div class="ck-field">
+                  <label for="ck-text">Văn bản mẫu (có thể sửa)</label>
+                  <textarea id="ck-text" rows="6" maxlength="3000"></textarea>
+                </div>
+
+                <div class="ck-sliders">
+                  <div class="slider-row">
+                    <div class="slider-head">
+                      <label for="ck-size">Chunk size (ký tự)</label>
+                      <output id="ck-size-out" for="ck-size">160</output>
+                    </div>
+                    <input type="range" id="ck-size" min="40" max="400" step="10" value="160">
+                  </div>
+                  <div class="slider-row">
+                    <div class="slider-head">
+                      <label for="ck-overlap">Chunk overlap (ký tự)</label>
+                      <output id="ck-overlap-out" for="ck-overlap">30</output>
+                    </div>
+                    <input type="range" id="ck-overlap" min="0" max="80" step="5" value="30">
+                  </div>
+                </div>
+                <p class="demo-note">Demo cắt cứng theo ký tự để thấy rõ ranh giới. Hệ thống thật thường đếm theo token. Overlap tối đa bằng một nửa chunk size.</p>
+
+                <dl class="results ck-results">
+                  <div><dt>Số chunk</dt><dd><output data-ck="count"></output></dd></div>
+                  <div><dt>Ký tự gốc</dt><dd><output data-ck="chars"></output></dd></div>
+                  <div><dt>Tổng ký tự sau khi cắt</dt><dd><output data-ck="total"></output></dd></div>
+                  <div><dt>Cắt giữa câu</dt><dd><output data-ck="mid"></output></dd></div>
+                </dl>
+
+                <div>
+                  <p class="calc-title">Văn bản sau khi cắt (số trong ô đen là điểm bắt đầu của chunk)</p>
+                  <p class="ck-text" data-ck="text" aria-label="Văn bản được tô màu theo chunk"></p>
+                  <ul class="legend">
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" fill="#e3f1ef" stroke="#0b6e69"/></svg>
+                      <span>Mỗi chunk một màu (xoay vòng bốn màu); phần chỉ thuộc một chunk</span>
+                    </li>
+                    <li>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" fill="#f1c76b" stroke="#8a5a00"/></svg>
+                      <span>Vàng đậm: vùng overlap, thuộc cả hai chunk liền kề</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p class="calc-title">Danh sách các chunk</p>
+                  <ol class="ck-list" data-ck="list"></ol>
+                </div>
+
+                <div class="btn-row">
+                  <button type="button" class="btn" data-action="ck-reset">Khôi phục văn bản mẫu và giá trị ban đầu</button>
+                </div>
+                <p class="sr-only" aria-live="polite" data-ck="live"></p>
+              </div>
+            </div>
+
+            <p>Một số thí nghiệm nên thử:</p>
+            <ul>
+              <li>Đặt overlap bằng 0 rồi giảm chunk size: số lần “cắt giữa câu” tăng nhanh.</li>
+              <li>Tăng overlap lên một nửa chunk size: ranh giới an toàn hơn, nhưng tổng ký tự phải lưu tăng đáng kể.</li>
+              <li>Xóa văn bản mẫu và dán thử một đoạn tài liệu của chính bạn để xem chunk size nào hợp lý với nó.</li>
+            </ul>
+
+          </div>
+        </section>
+
+        <section class="section" id="synthesis" aria-labelledby="synthesis-title">
+          <h2 id="synthesis-title">5. Information Analysis &amp; Synthesis</h2>
+          <p class="section-lead">Từ nhiều nguồn đến một câu trả lời: keyword và semantic search, hybrid search, reranking, và xử lý thông tin trùng lặp hoặc mâu thuẫn.</p>
+          <div class="prose">
+
+            <h3 id="trich-xuat">Phân tích và trích xuất thông tin từ dữ liệu</h3>
+            <p>
+              Dữ liệu thô (trang web, PDF, email, bảng) hiếm khi ở dạng sẵn sàng để tìm kiếm hay trả lời câu hỏi. Bước đầu tiên
+              là rút ra những phần có ích: thực thể (người, tổ chức, ngày, số tiền), quan hệ giữa chúng, chủ đề, hay các trường
+              có cấu trúc. Chọn phương pháp theo mức độ ổn định của định dạng dữ liệu:
+            </p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng các phương pháp trích xuất thông tin">
+              <table class="table--wide">
+                <caption class="sr-only">Các phương pháp trích xuất thông tin</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Phương pháp</th>
+                    <th scope="col">Hợp khi</th>
+                    <th scope="col">Lưu ý</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Quy tắc (regex, parser)</th>
+                    <td>Định dạng ổn định: ngày tháng, số tiền, mã đơn hàng, bảng HTML.</td>
+                    <td>Chính xác và rẻ, nhưng hỏng khi định dạng nguồn thay đổi.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Nhận diện thực thể, phân loại</th>
+                    <td>Cần gắn nhãn thực thể (người, tổ chức, địa điểm) hoặc chủ đề cho từng đoạn.</td>
+                    <td>Cần mô hình có sẵn hoặc dữ liệu huấn luyện; kém đi khi sang lĩnh vực mới.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">LLM trích xuất theo lược đồ</th>
+                    <td>Văn bản tự do nhưng cần kết quả có cấu trúc (ví dụ JSON với các trường định sẵn).</td>
+                    <td>Linh hoạt, nhưng có thể bịa giá trị cho trường không có trong văn bản. Nên cho phép giá trị rỗng, kiểm tra kết quả theo lược đồ và đối chiếu lại với đoạn nguồn.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">OCR và bộ đọc bảng, PDF</th>
+                    <td>Tài liệu quét, bảng biểu, PDF nhiều cột.</td>
+                    <td>Lỗi nhận dạng sẽ lan xuống mọi bước sau, nên cần kiểm tra mẫu thủ công.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Dù dùng cách nào, hãy luôn giữ lại <strong>nguồn gốc</strong> (tài liệu, trang, thời điểm) của từng mẩu thông tin được trích ra. Không có nó thì không thể kiểm chứng hay dẫn nguồn ở bước tổng hợp.</p>
+
+            <h3 id="to-chuc">Tổ chức, phân loại và tổng hợp từ nhiều nguồn</h3>
+            <p>
+              Khi thông tin đến từ nhiều nguồn, việc tổng hợp nên đi theo một quy trình rõ ràng thay vì đổ tất cả vào một chỗ:
+            </p>
+            <figure class="pipeline lane-index">
+              <ol class="steps">
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">1</span>
+                    <strong class="node-title">Thu thập và chuẩn hóa</strong>
+                    <span class="node-desc">Thống nhất định dạng, ngôn ngữ, đơn vị, cách ghi ngày tháng.</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">2</span>
+                    <strong class="node-title">Gắn metadata</strong>
+                    <span class="node-desc">Nguồn, ngày đăng, phiên bản, loại tài liệu, mức độ đáng tin.</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">3</span>
+                    <strong class="node-title">Phân loại và nhóm</strong>
+                    <span class="node-desc">Gán chủ đề, nhóm các mẩu nói về cùng một vấn đề.</span>
+                  </div>
+                </li>
+                <li>
+                  <div class="node node--static">
+                    <span class="step-no" aria-hidden="true">4</span>
+                    <strong class="node-title">Tổng hợp có dẫn nguồn</strong>
+                    <span class="node-desc">Gộp ý trong từng nhóm, nêu rõ chỗ các nguồn đồng ý hoặc bất đồng.</span>
+                  </div>
+                </li>
+              </ol>
+              <figcaption>Metadata ở bước 2 là thứ giúp xử lý trùng lặp và mâu thuẫn ở các bước sau (xem cuối phần này).</figcaption>
+            </figure>
+
+            <h3 id="kw-sem">Keyword Search và Semantic Search</h3>
+            <p>
+              <strong>Keyword search</strong> tìm tài liệu có chứa đúng các từ trong truy vấn. Nó dựa trên chỉ mục đảo (từ trỏ
+              tới danh sách tài liệu chứa từ đó) và chấm điểm bằng <strong>TF-IDF</strong> hoặc <strong>BM25</strong>: từ xuất
+              hiện nhiều trong tài liệu thì tăng điểm, từ hiếm trong cả kho dữ liệu thì có trọng số cao, và có hiệu chỉnh theo
+              độ dài tài liệu. <strong>Semantic search</strong> chuyển truy vấn và tài liệu thành vector rồi tìm theo độ gần
+              (Phần 1 và 2), nên khớp được theo nghĩa dù không trùng từ.
+            </p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng so sánh keyword search và semantic search">
+              <table class="table--wide">
+                <caption class="sr-only">So sánh keyword search và semantic search</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Tiêu chí</th>
+                    <th scope="col">Keyword (BM25)</th>
+                    <th scope="col">Semantic (vector)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Mạnh ở</th>
+                    <td>Từ khóa chính xác: mã lỗi, tên riêng, mã sản phẩm, số hiệu điều luật.</td>
+                    <td>Từ đồng nghĩa, diễn đạt khác nhau, câu hỏi dài dạng tự nhiên, đôi khi cả đa ngôn ngữ.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Yếu ở</th>
+                    <td>Không hiểu đồng nghĩa hay cách nói khác. Với tiếng Việt, cách tách từ ảnh hưởng nhiều (ví dụ “học máy” là một từ ghép).</td>
+                    <td>Có thể bỏ lỡ chuỗi lạ, số hiệu, phiên bản; có thể trả về mục “gần nghĩa nhưng sai”, ví dụ khác phiên bản hoặc phủ định.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Giải thích kết quả</th>
+                    <td>Dễ: chỉ ra từ nào khớp.</td>
+                    <td>Khó hơn: chỉ có điểm tương đồng.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Chi phí</th>
+                    <td>Không cần mô hình embedding; chỉ mục nhẹ.</td>
+                    <td>Cần tạo embedding và chỉ mục vector (Phần 2).</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Ba tình huống minh họa (ví dụ giả định):</p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng ví dụ truy vấn mà mỗi loại tìm kiếm thắng hoặc thua">
+              <table class="table--wide">
+                <caption class="sr-only">Ví dụ truy vấn và loại tìm kiếm phù hợp</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Truy vấn</th>
+                    <th scope="col">Tài liệu cần tìm</th>
+                    <th scope="col">Keyword</th>
+                    <th scope="col">Semantic</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">“lỗi E4021”</th>
+                    <td>“Mã lỗi E4021: kết nối hết thời gian chờ”</td>
+                    <td>Thắng: khớp đúng mã.</td>
+                    <td>Có thể thua: mã lạ không mang nhiều nghĩa trong embedding.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">“laptop chạy chậm phải làm sao”</th>
+                    <td>“Cách tăng tốc máy tính xách tay”</td>
+                    <td>Thua: gần như không có từ chung.</td>
+                    <td>Thắng: hiểu cùng chủ đề.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">“chính sách hoàn tiền”</th>
+                    <td>“Quy định trả hàng và hoàn tiền”</td>
+                    <td>Khớp một phần (từ “hoàn tiền”).</td>
+                    <td>Khớp tốt.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Không loại nào thắng ở mọi tình huống, đó là lý do người ta kết hợp chúng.</p>
+
+            <h3 id="hybrid-rerank">Hybrid Search và Reranking</h3>
+            <p>
+              <strong>Hybrid search</strong> chạy keyword search và vector search song song rồi hợp nhất hai danh sách kết quả.
+              Sau đó, <strong>reranker</strong> chấm lại các ứng viên đầu bảng để chọn ra top-<em>k</em> cuối cùng.
+            </p>
+            <figure class="figure">
+              <div class="scroll-x" tabindex="0" role="region" aria-label="Sơ đồ pipeline hybrid search và reranking, có thể cuộn ngang">
+                <svg viewBox="0 0 600 352" role="img" aria-labelledby="fig-hy-title fig-hy-desc">
+                  <title id="fig-hy-title">Pipeline hybrid search và reranking</title>
+                  <desc id="fig-hy-desc">Truy vấn được gửi song song tới keyword search và vector search. Hai danh sách kết quả được hợp nhất bằng RRF, sau đó reranker chấm lại các ứng viên và chọn ra top k đưa vào prompt.</desc>
+                  <defs>
+                    <marker id="hy-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                      <path class="mm-arrowhead" d="M0 0 L10 5 L0 10 z"/>
+                    </marker>
+                  </defs>
+
+                  <rect class="mm-box" x="230" y="10" width="140" height="36"/>
+                  <text class="mm-title" x="300" y="33">Truy vấn</text>
+
+                  <line class="mm-arrow" x1="260" y1="46" x2="170" y2="82" marker-end="url(#hy-arrow)"/>
+                  <line class="mm-arrow" x1="340" y1="46" x2="430" y2="82" marker-end="url(#hy-arrow)"/>
+
+                  <rect class="mm-box" x="30" y="86" width="250" height="52"/>
+                  <text class="mm-title" x="155" y="108">Keyword search (BM25)</text>
+                  <text class="mm-sub" x="155" y="127">khớp từ khóa, cho danh sách 1</text>
+                  <rect class="mm-box is-ltm" x="320" y="86" width="250" height="52"/>
+                  <text class="mm-title" x="445" y="108">Vector search (embedding)</text>
+                  <text class="mm-sub" x="445" y="127">khớp theo nghĩa, cho danh sách 2</text>
+
+                  <line class="mm-arrow" x1="155" y1="138" x2="260" y2="168" marker-end="url(#hy-arrow)"/>
+                  <line class="mm-arrow" x1="445" y1="138" x2="340" y2="168" marker-end="url(#hy-arrow)"/>
+
+                  <rect class="mm-box" x="200" y="172" width="200" height="38"/>
+                  <text class="mm-title" x="300" y="196">Hợp nhất (RRF)</text>
+
+                  <line class="mm-arrow" x1="300" y1="210" x2="300" y2="236" marker-end="url(#hy-arrow)"/>
+                  <text class="mm-note" x="312" y="228">ứng viên đã gộp, nhiều hơn k</text>
+
+                  <rect class="mm-box is-llm" x="170" y="240" width="260" height="50"/>
+                  <text class="mm-title" x="300" y="262">Reranking (cross-encoder)</text>
+                  <text class="mm-sub" x="300" y="281">đọc cặp (truy vấn, đoạn) và chấm lại</text>
+
+                  <line class="mm-arrow" x1="300" y1="290" x2="300" y2="314" marker-end="url(#hy-arrow)"/>
+                  <rect class="mm-box is-prompt" x="190" y="316" width="220" height="30"/>
+                  <text class="mm-title" x="300" y="336">Top-k đưa vào prompt</text>
+                </svg>
+              </div>
+              <figcaption>
+                Hợp nhất và rerank là hai bước khác nhau: hợp nhất gộp hai danh sách rẻ và nhanh, còn rerank tốn công hơn nhưng
+                chỉ chạy trên các ứng viên đầu bảng.
+                <span class="only-narrow">Vuốt ngang để xem toàn bộ hình.</span>
+              </figcaption>
+            </figure>
+
+            <h4>Hợp nhất bằng Reciprocal Rank Fusion (RRF)</h4>
+            <p>
+              Điểm của BM25 và độ tương đồng cosine nằm trên hai thang đo khác nhau nên không thể cộng thẳng. RRF tránh vấn đề
+              này bằng cách chỉ dùng <em>thứ hạng</em>: mỗi tài liệu nhận điểm từ mỗi danh sách mà nó xuất hiện, rồi cộng lại.
+            </p>
+            <div class="formula">
+              RRF(d) = Σ<sub>danh sách</sub> 1 / (k + rank<sub>danh sách</sub>(d))
+            </div>
+            <p>
+              Trong đó rank bắt đầu từ 1 (đứng đầu), và <em>k</em> là hằng số làm mượt; nhiều tài liệu và thư viện dùng
+              <em>k</em> = 60. Tài liệu không có trong một danh sách thì không nhận điểm từ danh sách đó. Hạng càng cao điểm
+              càng lớn, nhưng điểm giảm dần chứ không rơi vực, nên một tài liệu đứng khá cao ở cả hai danh sách có thể vượt
+              tài liệu đứng đầu ở một danh sách nhưng vắng ở danh sách kia.
+            </p>
+
+            <h4>Ví dụ tính tay với <em>k</em> = 60</h4>
+            <p>Danh sách 1 (keyword): A, B, C, D. Danh sách 2 (vector): C, A, E, B.</p>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng ví dụ tính RRF bằng tay">
+              <table>
+                <caption class="sr-only">Ví dụ tính RRF với k bằng 60</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Tài liệu</th>
+                    <th scope="col">Hạng ở DS1</th>
+                    <th scope="col">Hạng ở DS2</th>
+                    <th scope="col">Điểm RRF</th>
+                    <th scope="col">Hạng chung</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><th scope="row">A</th><td>1</td><td>2</td><td>1/61 + 1/62 ≈ 0.032522</td><td>1</td></tr>
+                  <tr><th scope="row">C</th><td>3</td><td>1</td><td>1/63 + 1/61 ≈ 0.032266</td><td>2</td></tr>
+                  <tr><th scope="row">B</th><td>2</td><td>4</td><td>1/62 + 1/64 ≈ 0.031754</td><td>3</td></tr>
+                  <tr><th scope="row">E</th><td>không có</td><td>3</td><td>1/63 ≈ 0.015873</td><td>4</td></tr>
+                  <tr><th scope="row">D</th><td>4</td><td>không có</td><td>1/64 ≈ 0.015625</td><td>5</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              C đứng đầu danh sách vector, nhưng A được cả hai danh sách xếp cao nên lên đầu bảng chung. Hai tài liệu chỉ xuất
+              hiện ở một danh sách (E, D) tụt xuống cuối. Hãy thử lại các con số này trong demo bên dưới.
+            </p>
+
+            <div class="demo" id="demo-rrf">
+              <h4 class="demo-title" id="demo-rrf-title">Demo: tính RRF từ hai danh sách xếp hạng tự chỉnh</h4>
+              <div class="demo-stack">
+                <div class="rrf-lists">
+                  <fieldset class="coord-set is-a" data-rrf="list1">
+                    <legend>Danh sách 1: keyword (BM25)</legend>
+                  </fieldset>
+                  <fieldset class="coord-set is-b" data-rrf="list2">
+                    <legend>Danh sách 2: vector (embedding)</legend>
+                  </fieldset>
+                </div>
+
+                <div class="slider-row">
+                  <div class="slider-head">
+                    <label for="rrf-k">Hằng số k</label>
+                    <output id="rrf-k-out" for="rrf-k">60</output>
+                  </div>
+                  <input type="range" id="rrf-k" min="1" max="100" step="1" value="60">
+                </div>
+
+                <div class="btn-row" role="group" aria-label="Ví dụ có sẵn">
+                  <button type="button" class="btn" data-rrf-preset="example">Ví dụ trong bài (k = 60)</button>
+                  <button type="button" class="btn" data-rrf-preset="same">Hai danh sách giống nhau</button>
+                  <button type="button" class="btn" data-rrf-preset="disjoint">Hai danh sách không chung tài liệu nào</button>
+                  <button type="button" class="btn" data-rrf-preset="smallk">Ví dụ trong bài với k = 1</button>
+                </div>
+
+                <p class="demo-note">A đến F là mã tài liệu giả định. Chọn “—” để bỏ trống một hạng. Hạng được tính theo vị trí trong danh sách, bắt đầu từ 1.</p>
+                <div data-rrf="warn"></div>
+
+                <div class="table-wrap" tabindex="0" role="region" aria-label="Kết quả RRF">
+                  <table class="rrf-table">
+                    <caption class="sr-only">Kết quả hợp nhất bằng RRF, xếp theo điểm giảm dần</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Hạng chung</th>
+                        <th scope="col">Tài liệu</th>
+                        <th scope="col">Hạng ở DS1</th>
+                        <th scope="col">Hạng ở DS2</th>
+                        <th scope="col">Điểm RRF</th>
+                        <th scope="col">Cách tính</th>
+                      </tr>
+                    </thead>
+                    <tbody data-rrf="rows"></tbody>
+                  </table>
+                </div>
+                <p class="sr-only" aria-live="polite" data-rrf="live"></p>
+              </div>
+            </div>
+
+            <h4>Reranking</h4>
+            <p>
+              Vector search dùng <strong>bi-encoder</strong>: truy vấn và mỗi tài liệu được mã hóa riêng thành vector, nên có thể
+              tính trước vector của cả kho dữ liệu và tìm rất nhanh, nhưng truy vấn và tài liệu chưa từng “nhìn thấy” nhau lúc mã
+              hóa. <strong>Cross-encoder</strong> thì đọc truy vấn và tài liệu <em>cùng lúc</em> trong một lần chạy mô hình và
+              cho ra một điểm liên quan, nên bắt được các quan hệ tinh hơn (phủ định, điều kiện, thứ tự) và thường chính xác hơn.
+              Cái giá là phải chạy mô hình cho từng cặp (truy vấn, tài liệu), không thể tính trước.
+            </p>
+            <p>
+              Vì vậy cách làm thông thường là hai tầng: tầng đầu (keyword, vector, hybrid) lấy ra một tập ứng viên khá rộng
+              nhanh và rẻ; tầng sau (reranker) chỉ chấm lại các ứng viên đó rồi giữ top-<em>k</em>. Bạn đánh đổi thêm một chút độ
+              trễ và chi phí để có thứ hạng tốt hơn ở những vị trí đầu, nơi LLM thực sự đọc.
+            </p>
+
+            <h3 id="xu-ly-van-de">Xử lý thông tin trùng lặp, mâu thuẫn và thiếu ngữ cảnh</h3>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Bảng ba vấn đề khi tổng hợp thông tin và cách xử lý">
+              <table class="table--wide">
+                <caption class="sr-only">Ba vấn đề khi tổng hợp thông tin và hướng xử lý</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Vấn đề</th>
+                    <th scope="col">Ví dụ</th>
+                    <th scope="col">Hướng xử lý</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Trùng lặp</th>
+                    <td>Cùng một bản tin được đăng lại ở ba trang. Hoặc overlap khi chunking tạo ra hai chunk gần giống nhau, cùng lọt vào top-<em>k</em> và chiếm chỗ của thông tin khác.</td>
+                    <td>
+                      Chuẩn hóa văn bản rồi so băm để loại bản sao y hệt. Loại bản gần giống bằng ngưỡng độ tương đồng
+                      vector (ngưỡng phải thử với dữ liệu của bạn). Khi chọn top-<em>k</em>, dùng kỹ thuật đa dạng hóa như MMR để
+                      không chọn các mục giống nhau. Giữ một bản chuẩn và gộp danh sách nguồn.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Mâu thuẫn</th>
+                    <td>Quy định cũ ghi hoàn tiền trong 7 ngày, quy định mới ghi 14 ngày. Hai bài báo đưa số liệu khác nhau về cùng một sự kiện.</td>
+                    <td>
+                      Dựa vào metadata: ngày, phiên bản, mức độ đáng tin của nguồn; ưu tiên bản mới và nguồn chính thức.
+                      Nếu không phân xử được, trình bày cả hai kèm nguồn và thời điểm thay vì tự chọn hoặc lấy trung bình.
+                      Hướng dẫn mô hình nêu rõ khi các nguồn bất đồng.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Thiếu ngữ cảnh</th>
+                    <td>Chunk chỉ ghi “Giá là 200.000đ mỗi tháng.” mà không nói giá của gói nào. Câu hỏi nối tiếp “còn nó thì sao?” không nhắc tới đối tượng.</td>
+                    <td>
+                      Gắn tiêu đề, đường dẫn mục vào metadata hoặc đầu mỗi chunk. Lấy thêm các chunk lân cận hoặc đoạn
+                      cha của chunk được tìm thấy. Viết lại câu hỏi nối tiếp thành câu đầy đủ dựa trên lịch sử hội thoại.
+                      Nếu vẫn không đủ căn cứ, nói rõ là chưa đủ thông tin thay vì đoán.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <p class="callout-title">Gợi ý chung</p>
+              <p>
+                Cả ba vấn đề đều dễ xử lý hơn nhiều nếu từ đầu mỗi mẩu thông tin đã mang theo nguồn, thời điểm và vị trí trong
+                tài liệu gốc (xem bước 2 của quy trình tổng hợp ở trên). Đầu tư vào metadata ở bước lập chỉ mục thường hiệu
+                quả hơn là vá lỗi ở bước trả lời.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="section" id="references" aria-labelledby="references-title">
+          <h2 id="references-title">Tài liệu tham khảo</h2>
+          <p class="section-lead">
+            Các nguồn dưới đây là bài báo và tài liệu gốc mà nội dung trang này dựa vào. Mình chỉ ghi tác giả, tiêu đề và nơi công bố,
+            không kèm đường dẫn khi không chắc chắn. Các con số ở dạng “gợi ý thực nghiệm” trong bài là kinh nghiệm chung, không lấy từ
+            một nguồn cụ thể nào ở đây.
+          </p>
+          <div class="prose">
+            <h3>Vector database và thuật toán tìm kiếm</h3>
+            <ul class="refs">
+              <li>Malkov, Y. A. và Yashunin, D. A. “Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs.” IEEE Transactions on Pattern Analysis and Machine Intelligence, 2020 (bản arXiv: 1603.09320).</li>
+              <li>Jégou, H., Douze, M. và Schmid, C. “Product Quantization for Nearest Neighbor Search.” IEEE Transactions on Pattern Analysis and Machine Intelligence, 2011.</li>
+              <li>Johnson, J., Douze, M. và Jégou, H. “Billion-scale similarity search with GPUs.” IEEE Transactions on Big Data, 2021 (bản arXiv: 1702.08734). Bài giới thiệu thư viện FAISS.</li>
+              <li>Tài liệu và wiki của thư viện FAISS (Meta AI Research): github.com/facebookresearch/faiss, phần mô tả các chỉ mục Flat, IVF, HNSW và PQ.</li>
+            </ul>
+            <h3>Embedding, tìm kiếm và reranking</h3>
+            <ul class="refs">
+              <li>Reimers, N. và Gurevych, I. “Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.” EMNLP 2019. Mô hình dạng bi-encoder.</li>
+              <li>Nogueira, R. và Cho, K. “Passage Re-ranking with BERT.” arXiv: 1901.04085, 2019. Reranking bằng mô hình đọc chung truy vấn và đoạn văn (cross-encoder).</li>
+              <li>Robertson, S. và Zaragoza, H. “The Probabilistic Relevance Framework: BM25 and Beyond.” Foundations and Trends in Information Retrieval, 2009.</li>
+              <li>Cormack, G. V., Clarke, C. L. A. và Büttcher, S. “Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods.” SIGIR 2009.</li>
+              <li>Carbonell, J. và Goldstein, J. “The Use of MMR, Diversity-Based Reranking for Reordering Documents and Producing Summaries.” SIGIR 1998.</li>
+            </ul>
+            <h3>RAG và bộ nhớ của AI</h3>
+            <ul class="refs">
+              <li>Lewis, P. và cộng sự. “Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.” NeurIPS 2020 (arXiv: 2005.11401).</li>
+              <li>Park, J. S. và cộng sự. “Generative Agents: Interactive Simulacra of Human Behavior.” UIST 2023 (arXiv: 2304.03442). Một cách truy xuất memory kết hợp độ mới, độ liên quan và độ quan trọng.</li>
+              <li>Packer, C. và cộng sự. “MemGPT: Towards LLMs as Operating Systems.” arXiv: 2310.08560, 2023.</li>
+            </ul>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>
